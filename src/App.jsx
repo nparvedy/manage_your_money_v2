@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import PaymentsTable from './components/PaymentsTable';
+import Charts from './components/Charts';
 
 const App = () => {
   const [payments, setPayments] = useState([]);
@@ -84,10 +85,11 @@ const App = () => {
         refreshAll={refreshAll}
       />
       <div className="flex-1 p-8 overflow-y-auto">
-        <header className="mb-8">
+        <header className="mb-2">
           <h1 className="text-4xl font-extrabold text-gray-800">Gestion des Paiements</h1>
           <p className="text-gray-600">Gérez vos paiements et suivez vos finances facilement.</p>
         </header>
+        <Charts payments={payments} />
         <PaymentsTable
           payments={payments}
           onEdit={handleEditPayment}

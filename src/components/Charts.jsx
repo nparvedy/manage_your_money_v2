@@ -1,0 +1,120 @@
+import { useState } from 'react';
+import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Chart, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Tooltip, Legend, Title } from 'chart.js';
+import { FaChartBar } from 'react-icons/fa';
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import React from 'react';
+
+Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Tooltip, Legend, Title);
+
+function getMonthLabel(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleString('fr-FR', { month: 'short', year: '2-digit' });
+}
+
+export default function Charts({ payments }) {
+  const [open, setOpen] = useState(false);
+
+  // Evolution du solde par mois
+  const sorted = [...payments].sort((a, b) => a.sampling_date.localeCompare(b.sampling_date));
+  let balance = 0;
+  const balanceByMonth = {};
+  sorted.forEach((p) => {
+    const label = getMonthLabel(p.sampling_date);
+    balance += p.amount;
+    balanceByMonth[label] = balance;
+  });
+  const months = Object.keys(balanceByMonth);
+  const balances = Object.values(balanceByMonth);
+
+  // Répartition par source (recettes/dépenses)
+  const sources = {};
+  sorted.forEach((p) => {
+    if (!sources[p.source]) sources[p.source] = 0;
+    sources[p.source] += p.amount;
+  });
+  const sourceLabels = Object.keys(sources);
+  const sourceData = Object.values(sources);
+
+  // Répartition recettes/dépenses
+  const recettes = payments.filter(p => p.amount >= 0).reduce((sum, p) => sum + p.amount, 0);
+  const depenses = payments.filter(p => p.amount < 0).reduce((sum, p) => sum + Math.abs(p.amount), 0);
+
+  return (
+    <div className="mb-2">
+      <button
+        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition mb-2 shadow"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls="charts-visualisation"
+      >
+        <FaChartBar className="text-lg" />
+        <span>Visualiser les graphiques</span>
+        {open ? <FaChevronUp className="ml-2" /> : <FaChevronDown className="ml-2" />}
+      </button>
+      <div
+        id="charts-visualisation"
+        className={`transition-all duration-500 overflow-hidden ${open ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-bold mb-2 text-center">Évolution du solde</h3>
+            <Line
+              data={{
+                labels: months,
+                datasets: [{
+                  label: 'Solde (€)',
+                  data: balances,
+                  borderColor: '#6366f1',
+                  backgroundColor: 'rgba(99,102,241,0.1)',
+                  tension: 0.3,
+                  fill: true,
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } },
+              }}
+            />
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-bold mb-2 text-center">Répartition par source</h3>
+            <Bar
+              data={{
+                labels: sourceLabels,
+                datasets: [{
+                  label: 'Montant (€)',
+                  data: sourceData,
+                  backgroundColor: '#6366f1',
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { display: false } },
+                indexAxis: 'y',
+                scales: { x: { beginAtZero: true } },
+              }}
+            />
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-bold mb-2 text-center">Recettes vs Dépenses</h3>
+            <Pie
+              data={{
+                labels: ['Recettes', 'Dépenses'],
+                datasets: [{
+                  data: [recettes, depenses],
+                  backgroundColor: ['#22c55e', '#ef4444'],
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

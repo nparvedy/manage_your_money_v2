@@ -7,7 +7,7 @@
    - Pourquoi : Facilite le suivi des types de dépenses (loyer, alimentation, loisirs, etc.) et permet des statistiques par catégorie.
 
 3. **Recherche et filtres avancés**
-   - Pourquoi : Permet de retrouver rapidement un paiement ou de filtrer par montant, source, date, catégorie, etc.
+   - Pourquoi : Permet de retrouver rapidement un paiement ou de filtrer par montant, source, date, catégorie, etc. FAIT!!!
 
 4. **Gestion multi-comptes**
    - Pourquoi : Utile pour suivre plusieurs comptes (perso, pro, commun, etc.) dans la même application.
