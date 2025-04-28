@@ -11,6 +11,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     sampling_date: '',
     months: '',
     pause: false,
+    category: '',
   });
 
   const [showBatchModal, setShowBatchModal] = useState(false);
@@ -26,6 +27,32 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportDates, setExportDates] = useState({ start: '', end: '' });
   const [exportFormat, setExportFormat] = useState('pdf');
+
+  const categories = [
+    'Loyer',
+    'Alimentation',
+    'Loisirs',
+    'Transports',
+    'Santé',
+    'Abonnements',
+    'Impôts',
+    'Divers',
+    "Salaires",
+    "Crédit",
+  ];
+
+  const categoryColors = {
+    'Loyer': 'text-purple-700',
+    'Alimentation': 'text-green-700',
+    'Loisirs': 'text-pink-600',
+    'Transports': 'text-yellow-700',
+    'Santé': 'text-red-600',
+    'Abonnements': 'text-blue-700',
+    'Impôts': 'text-orange-700',
+    'Divers': 'text-gray-700',
+    'Salaires': 'text-emerald-700',
+    'Crédit': 'text-cyan-700',
+  };
 
   const handleDownloadDB = async () => {
     const result = await window.api.dbDownload();
@@ -80,6 +107,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         sampling_date: editingPayment.sampling_date,
         months: editingPayment.nbr_month,
         pause: editingPayment.pause,
+        category: editingPayment.category || '',
       });
     }
   }, [editingPayment]);
@@ -117,7 +145,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       return;
     }
     await onSubmit(formData);
-    setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false });
+    setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '' });
     document.activeElement.blur();
     setInfoModal({ show: true, message: 'Paiement ajouté ou modifié avec succès.', type: 'success' });
   };
@@ -215,6 +243,20 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         />
+        <select
+          name="category"
+          value={formData.category || ''}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        >
+          <option value="" disabled>Catégorie</option>
+          {categories.map(cat => (
+            <option key={cat} value={cat} className={categoryColors[cat] || ''}>
+              {cat}
+            </option>
+          ))}
+        </select>
         <label className="flex items-center space-x-2">
           {/* <input
             type="checkbox"
@@ -235,7 +277,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
           <button
             type="button"
             onClick={() => {
-              setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false });
+              setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '' });
               onCancel();
               setTimeout(() => setFormData({}), 0);
               setInfoModal({ show: true, message: 'Modification annulée.', type: 'info' });

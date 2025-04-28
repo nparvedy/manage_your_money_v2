@@ -94,7 +94,7 @@ ipcMain.handle('money:getLimitDate', () => {
 
 // Gestionnaire pour créer un paiement
 ipcMain.handle('payment:create', (event, data) => {
-  const { source, amount, sampling_date, nbr_month, pause } = {
+  const { source, amount, sampling_date, nbr_month, pause, category } = {
     ...data,
     amount: parseFloat(data.amount),
     nbr_month: parseInt(data.months, 10),
@@ -107,14 +107,14 @@ ipcMain.handle('payment:create', (event, data) => {
   }
 
   const insert = db.prepare(
-    'INSERT INTO payment (source, amount, sampling_date, nbr_month, pause) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO payment (source, amount, sampling_date, nbr_month, pause, category) VALUES (?, ?, ?, ?, ?, ?)'
   );
   const ops = [];
   for (let i = 0; i < nbr_month; i++) {
     const date = new Date(sampling_date);
     date.setMonth(date.getMonth() + i);
     const iso = date.toISOString().slice(0, 10);
-    const result = insert.run(source, amount, iso, nbr_month, pause ? 1 : 0);
+    const result = insert.run(source, amount, iso, nbr_month, pause ? 1 : 0, category || '');
     ops.push(result);
   }
 
@@ -159,8 +159,8 @@ ipcMain.handle('payment:update', (event, data) => {
   }
 
   db.prepare(
-    'UPDATE payment SET source = ?, amount = ?, sampling_date = ?, nbr_month = ?, pause = ? WHERE id = ?'
-  ).run(data.source, data.amount, data.sampling_date, data.nbr_month, data.pause ? 1 : 0, data.id);
+    'UPDATE payment SET source = ?, amount = ?, sampling_date = ?, nbr_month = ?, pause = ?, category = ? WHERE id = ?'
+  ).run(data.source, data.amount, data.sampling_date, data.nbr_month, data.pause ? 1 : 0, data.category || '', data.id);
   const { limit_date } = db.prepare('SELECT limit_date FROM money LIMIT 1').get();
   const balance = db.prepare(
     'SELECT SUM(amount) AS total FROM payment WHERE sampling_date <= ?'

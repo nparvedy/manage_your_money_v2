@@ -22,9 +22,16 @@ const initDB = () => {
       amount DECIMAL,
       sampling_date DATE,
       nbr_month INTEGER,
-      pause BOOLEAN
+      pause BOOLEAN,
+      category TEXT
     )
   `).run();
+
+  // Migration : ajout colonne category si manquante
+  const pragma = db.prepare("PRAGMA table_info(payment)").all();
+  if (!pragma.some(col => col.name === 'category')) {
+    db.prepare('ALTER TABLE payment ADD COLUMN category TEXT').run();
+  }
 
   // Insérer une ligne initiale dans la table money si elle est vide
   const count = db.prepare('SELECT COUNT(*) AS c FROM money').get().c;

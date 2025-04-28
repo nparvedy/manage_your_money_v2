@@ -1,10 +1,12 @@
 # Idées d'améliorations pour ManageYourMoney
 
 1. **Ajout de graphiques de visualisation**
-   - Pourquoi : Permet de visualiser l'évolution du solde, la répartition des dépenses/recettes par catégorie ou par mois, rendant l'analyse plus intuitive.
+   - Pourquoi : Permet de visualiser l'évolution du solde, la répartition des dépenses/recettes par catégorie ou par mois, rendant l'analyse plus intuitive. FAIT!!!
 
 2. **Catégorisation des paiements**
-   - Pourquoi : Facilite le suivi des types de dépenses (loyer, alimentation, loisirs, etc.) et permet des statistiques par catégorie.
+   - Pourquoi : Facilite le suivi des types de dépenses (loyer, alimentation, loisirs, etc.) et permet des statistiques par catégorie. FAIT!!!
+
+   Maintenant je voudrais que tu m'ajoutes une auto complétion quand on tape une lettre ou mot dans le champ source, en fonction des sources de paiements que j'ai déjà alors il me propose le plus proche et le plus pertinents
 
 3. **Recherche et filtres avancés**
    - Pourquoi : Permet de retrouver rapidement un paiement ou de filtrer par montant, source, date, catégorie, etc. FAIT!!!

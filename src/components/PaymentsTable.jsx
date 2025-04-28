@@ -11,6 +11,20 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
 
+  // Palette de couleurs pour chaque catégorie (mêmes couleurs que Charts et Sidebar)
+  const categoryColors = {
+    'Loyer': 'text-purple-700',
+    'Alimentation': 'text-green-700',
+    'Loisirs': 'text-pink-600',
+    'Transports': 'text-yellow-700',
+    'Santé': 'text-red-600',
+    'Abonnements': 'text-blue-700',
+    'Impôts': 'text-orange-700',
+    'Divers': 'text-gray-700',
+    'Salaires': 'text-emerald-700',
+    'Crédit': 'text-cyan-700',
+  };
+
   // Fonction de filtrage
   const filteredPayments = payments.filter((p) => {
     const matchSource = search === '' || p.source.toLowerCase().includes(search.toLowerCase());
@@ -107,6 +121,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
           <td className="p-2">{payment.amount.toFixed(2)}</td>
           <td className="p-2">{payment.sampling_date}</td>
           <td className="p-2">{payment.nbr_month}</td>
+          <td className={`p-2 ${categoryColors[payment.category] || ''}`}>{payment.category || ''}</td>
         </tr>
       );
     });
@@ -168,6 +183,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
             <th scope="col" className="px-6 py-4">Montant</th>
             <th scope="col" className="px-6 py-4">Date</th>
             <th scope="col" className="px-6 py-4">Mois</th>
+            <th scope="col" className="px-6 py-4">Catégorie</th>
           </tr>
         </thead>
         <tbody className="bg-gray-50 divide-y divide-gray-300">
