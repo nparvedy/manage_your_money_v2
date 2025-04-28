@@ -6,6 +6,7 @@ README généré automatiquement le 27 avril 2025
 
 **Gérez vos paiements, suivez votre solde, et gardez le contrôle sur vos finances personnelles, simplement et efficacement !**
 
+téléchargement : https://www.dropbox.com/scl/fi/nyogaxsbe4uvm4ksv8oy2/ManageYourMoneyV2.exe?rlkey=efp5eo89dgsnmqi4we173oakq&st=95pacaqn&dl=0
 ---
 
 ## 🚀 Présentation

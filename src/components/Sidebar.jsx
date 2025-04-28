@@ -23,6 +23,9 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
 
   const [showSettings, setShowSettings] = useState(false);
   const [infoModal, setInfoModal] = useState({ show: false, message: '', type: 'success' });
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportDates, setExportDates] = useState({ start: '', end: '' });
+  const [exportFormat, setExportFormat] = useState('pdf');
 
   const handleDownloadDB = async () => {
     const result = await window.api.dbDownload();
@@ -41,6 +44,27 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     } else {
       setInfoModal({ show: true, message: 'Erreur lors de la mise à jour de la base de données.', type: 'error' });
     }
+  };
+
+  const handleExportPayments = () => {
+    setShowExportModal(true);
+    setShowSettings(false);
+  };
+
+  const handleExportSubmit = async (e) => {
+    e.preventDefault();
+    // Appel à l'API Electron pour exporter en PDF ou CSV
+    const result = await window.api.exportPayments({
+      start: exportDates.start,
+      end: exportDates.end,
+      format: exportFormat
+    });
+    if (result && result.success) {
+      setInfoModal({ show: true, message: `Export ${exportFormat.toUpperCase()} téléchargé avec succès !`, type: 'success' });
+    } else {
+      setInfoModal({ show: true, message: `Erreur lors de l'export ${exportFormat.toUpperCase()}.`, type: 'error' });
+    }
+    setShowExportModal(false);
   };
 
   const handleCloseInfoModal = () => setInfoModal({ show: false, message: '', type: 'success' });
@@ -140,10 +164,16 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
             Télécharger la base de données
           </button>
           <button
-            className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
+            className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition mb-2"
             onClick={handleUpdateDB}
           >
             Mettre à jour la base de données
+          </button>
+          <button
+            className="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition"
+            onClick={handleExportPayments}
+          >
+            Exporter les paiements (PDF)
           </button>
         </div>
       )}
@@ -276,6 +306,62 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
                 className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition duration-300"
               >
                 Fermer
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modale export PDF */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
+              onClick={() => setShowExportModal(false)}
+              title="Fermer"
+              tabIndex={0}
+            >
+              ×
+            </button>
+            <h2 className="text-lg font-bold mb-4 text-gray-800">Exporter les paiements</h2>
+            <form onSubmit={handleExportSubmit} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 mb-1">Date de début</label>
+                <input
+                  type="date"
+                  value={exportDates.start}
+                  onChange={e => setExportDates({ ...exportDates, start: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">Date de fin</label>
+                <input
+                  type="date"
+                  value={exportDates.end}
+                  onChange={e => setExportDates({ ...exportDates, end: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">Format</label>
+                <select
+                  value={exportFormat}
+                  onChange={e => setExportFormat(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="pdf">PDF</option>
+                  <option value="csv">CSV</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition"
+              >
+                Exporter
               </button>
             </form>
           </div>
