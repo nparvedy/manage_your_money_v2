@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import PaymentsTable from './components/PaymentsTable';
 import Charts from './components/Charts';
+import { FaChartBar } from 'react-icons/fa';
 
 const App = () => {
   const [payments, setPayments] = useState([]);
   const [balance, setBalance] = useState(0);
   const [limitDate, setLimitDate] = useState('');
   const [editingPayment, setEditingPayment] = useState(null);
+  const [showCharts, setShowCharts] = useState(false);
+  const [chartsVisible, setChartsVisible] = useState(false);
 
   const fetchData = async () => {
     const fetchedLimitDate = await window.api.getLimitDate();
@@ -34,6 +37,15 @@ const App = () => {
   useEffect(() => {}, [payments]);
 
   useEffect(() => {}, [editingPayment]);
+
+  useEffect(() => {
+    if (showCharts) {
+      setChartsVisible(true);
+    } else {
+      const timeout = setTimeout(() => setChartsVisible(false), 500); // 500ms = durée animation
+      return () => clearTimeout(timeout);
+    }
+  }, [showCharts]);
 
   const handleAddOrUpdatePayment = async (data) => {
     try {
@@ -85,11 +97,33 @@ const App = () => {
         refreshAll={refreshAll}
       />
       <div className="flex-1 p-8 overflow-y-auto">
-        <header className="mb-2">
-          <h1 className="text-4xl font-extrabold text-gray-800">Gestion des Paiements</h1>
-          <p className="text-gray-600">Gérez vos paiements et suivez vos finances facilement.</p>
+        <header className="mb-2 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-extrabold text-gray-800">Gestion des Paiements</h1>
+            <p className="text-gray-600">Gérez vos paiements et suivez vos finances facilement.</p>
+          </div>
+          {/* Menu d'icônes */}
+          <div className="flex flex-col items-center gap-2 min-w-[60px]">
+            <button
+              className={`flex flex-col items-center group transition-shadow duration-300 p-2 rounded-xl ${showCharts ? 'shadow-inner shadow-indigo-400/60 bg-white' : ''}`}
+              onClick={() => setShowCharts(v => !v)}
+              title="Afficher les graphiques"
+              style={{ outline: 'none' }}
+            >
+              <FaChartBar className={`text-2xl text-indigo-600 group-hover:text-indigo-800 transition ${showCharts ? 'scale-110' : ''}`} />
+              <span className="text-xs text-gray-500 mt-1">Graphique</span>
+            </button>
+            {/* D'autres icônes pourront être ajoutées ici */}
+          </div>
         </header>
-        <Charts payments={payments} />
+        <div
+          id="charts-visualisation"
+          className={`transition-all duration-500 overflow-hidden ${showCharts ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+        >
+          <div className={`transition-all duration-500 ${showCharts ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+            {chartsVisible && <Charts payments={payments} />}
+          </div>
+        </div>
         <PaymentsTable
           payments={payments}
           onEdit={handleEditPayment}

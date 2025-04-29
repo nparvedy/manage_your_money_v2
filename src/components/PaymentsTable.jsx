@@ -3,17 +3,13 @@ import React, { useState } from 'react';
 const PaymentsTable = ({ payments, onEdit, onDelete }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
-  // Modale choix suppression/édition en masse ou non
   const [massActionModal, setMassActionModal] = useState({ show: false, payment: null, action: null });
-
-  // Filtres avancés
   const [search, setSearch] = useState('');
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
 
-  // Palette de couleurs pour chaque catégorie (mêmes couleurs que Charts et Sidebar)
   const categoryColors = {
     'Loyer': 'text-purple-700',
     'Alimentation': 'text-green-700',
@@ -27,7 +23,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
     'Crédit': 'text-cyan-700',
   };
 
-  // Fonction de filtrage
+  // Filtrage
   const filteredPayments = payments.filter((p) => {
     const matchSource = search === '' || p.source.toLowerCase().includes(search.toLowerCase());
     const matchMin = minAmount === '' || p.amount >= parseFloat(minAmount);
@@ -37,12 +33,17 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
     return matchSource && matchMin && matchMax && matchDateStart && matchDateEnd;
   });
 
-  // Edition : ouvre directement le formulaire sans modale
-  const handleEditClick = (id) => {
-    onEdit(id);
-  };
+  // Groupe les paiements par mois
+  const paymentsByMonth = {};
+  filteredPayments.forEach((p) => {
+    const month = new Date(p.sampling_date).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+    if (!paymentsByMonth[month]) paymentsByMonth[month] = [];
+    paymentsByMonth[month].push(p);
+  });
+  const months = Object.keys(paymentsByMonth);
 
-  // Suppression : propose la modale si paiement récurrent
+  // Actions (inchangées)
+  const handleEditClick = (id) => { onEdit(id); };
   const handleDeleteClick = (id) => {
     const payment = payments.find((p) => p.id === id);
     if (payment && payment.unique_id && payment.nbr_month > 1) {
@@ -52,7 +53,6 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
       setShowDeleteModal(true);
     }
   };
-
   const confirmDelete = () => {
     if (paymentToDelete) {
       onDelete(paymentToDelete);
@@ -60,223 +60,140 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
       setPaymentToDelete(null);
     }
   };
-
   const cancelDelete = () => {
     setShowDeleteModal(false);
     setPaymentToDelete(null);
   };
-
-  // Action édition en masse
   const handleEditMass = () => {
-    onEdit(massActionModal.payment.id, true); // true = édition en masse
+    onEdit(massActionModal.payment.id, true);
     setMassActionModal({ show: false, payment: null, action: null });
   };
-  // Action édition simple
   const handleEditSingle = () => {
     onEdit(massActionModal.payment.id, false);
     setMassActionModal({ show: false, payment: null, action: null });
   };
-  // Action suppression en masse
   const handleDeleteMass = async () => {
     await window.api.deleteByUniqueId(massActionModal.payment.unique_id);
     setMassActionModal({ show: false, payment: null, action: null });
     setPaymentToDelete(null);
     setShowDeleteModal(false);
-    // Rafraîchir la liste (onDelete déclenche le refreshAll côté App)
     onDelete();
   };
-  // Action suppression simple
   const handleDeleteSingle = () => {
     setPaymentToDelete(massActionModal.payment.id);
     setShowDeleteModal(true);
     setMassActionModal({ show: false, payment: null, action: null });
   };
 
-  const renderPayments = () => {
-    let lastMonth = '';
-    const rows = [];
-
-    filteredPayments.forEach((payment) => {
-      const month = new Date(payment.sampling_date).toLocaleString('fr-FR', {
-        month: 'long',
-        year: 'numeric',
-      });
-
-      if (month !== lastMonth) {
-        rows.push(
-          <tr key={`header-${month}`} className="bg-blue-100 font-bold text-gray-800 uppercase">
-            <td colSpan="6" className="px-4 py-2">{month}</td>
-          </tr>
-        );
-
-        const monthlyPayments = filteredPayments.filter((p) => {
-          const pMonth = new Date(p.sampling_date).toLocaleString('fr-FR', {
-            month: 'long',
-            year: 'numeric',
-          });
-          return pMonth === month;
-        });
-
-        const positiveSum = monthlyPayments
-          .filter((p) => p.amount >= 0)
-          .reduce((sum, p) => sum + p.amount, 0);
-
-        const negativeSum = monthlyPayments
-          .filter((p) => p.amount < 0)
-          .reduce((sum, p) => sum + p.amount, 0);
-
-        rows.push(
-          <tr key={`totals-${month}`} className="bg-blue-50 font-semibold text-gray-700 uppercase">
-            <td colSpan="2" className="px-4 py-2">Totaux</td>
-            <td className="px-4 py-2 text-green-600">+{positiveSum.toFixed(2)}</td>
-            <td></td>
-            <td className="px-4 py-2 text-red-600">{negativeSum.toFixed(2)}</td>
-            <td></td>
-          </tr>
-        );
-
-        lastMonth = month;
-      }
-
-      rows.push(
-        <tr key={payment.id} className={payment.amount >= 0 ? 'bg-green-50' : 'bg-red-50'}>
-          <td className="p-2">
-            <button
-              className="text-blue-500 hover:underline cursor-pointer"
-              onClick={() => {
-                handleEditClick(payment.id);
-              }}
-            >
-              ✏️
-            </button>
-            <button
-              className="text-red-500 hover:underline ml-2 cursor-pointer"
-              onClick={() => handleDeleteClick(payment.id)}
-            >
-              🗑️
-            </button>
-          </td>
-          <td className="p-2">{payment.source}</td>
-          <td className="p-2">{payment.amount.toFixed(2)}</td>
-          <td className="p-2">{payment.sampling_date}</td>
-          <td className="p-2">{payment.nbr_month}</td>
-          <td className={`p-2 ${categoryColors[payment.category] || ''}`}>{payment.category || ''}</td>
-        </tr>
-      );
-    });
-
-    return rows;
-  };
-
   return (
     <div className="relative overflow-x-auto shadow-lg rounded-lg z-10">
       {/* Filtres avancés */}
       <div className="flex flex-wrap gap-2 p-4 bg-gray-100 rounded-t-lg border-b border-gray-300">
-        <input
-          type="text"
-          placeholder="Rechercher par source..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
-        />
-        <input
-          type="number"
-          placeholder="Montant min"
-          value={minAmount}
-          onChange={e => setMinAmount(e.target.value)}
-          className="p-2 border border-gray-300 rounded w-32"
-        />
-        <input
-          type="number"
-          placeholder="Montant max"
-          value={maxAmount}
-          onChange={e => setMaxAmount(e.target.value)}
-          className="p-2 border border-gray-300 rounded w-32"
-        />
-        <input
-          type="date"
-          placeholder="Date début"
-          value={dateStart}
-          onChange={e => setDateStart(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
-        />
-        <input
-          type="date"
-          placeholder="Date fin"
-          value={dateEnd}
-          onChange={e => setDateEnd(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
-        />
-        <button
-          onClick={() => { setSearch(''); setMinAmount(''); setMaxAmount(''); setDateStart(''); setDateEnd(''); }}
-          className="p-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700"
-        >
-          Réinitialiser
-        </button>
+        <input type="text" placeholder="Rechercher par source..." value={search} onChange={e => setSearch(e.target.value)} className="p-2 border border-gray-300 rounded" />
+        <input type="number" placeholder="Montant min" value={minAmount} onChange={e => setMinAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32" />
+        <input type="number" placeholder="Montant max" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32" />
+        <input type="date" placeholder="Date début" value={dateStart} onChange={e => setDateStart(e.target.value)} className="p-2 border border-gray-300 rounded" />
+        <input type="date" placeholder="Date fin" value={dateEnd} onChange={e => setDateEnd(e.target.value)} className="p-2 border border-gray-300 rounded" />
+        <button onClick={() => { setSearch(''); setMinAmount(''); setMaxAmount(''); setDateStart(''); setDateEnd(''); }} className="p-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700">Réinitialiser</button>
       </div>
-      <table className="w-full text-base text-left text-gray-700">
-        <thead className="text-sm text-white uppercase bg-indigo-500">
-          <tr>
-            <th scope="col" className="px-6 py-4">Actions</th>
-            <th scope="col" className="px-6 py-4">Source</th>
-            <th scope="col" className="px-6 py-4">Montant</th>
-            <th scope="col" className="px-6 py-4">Date</th>
-            <th scope="col" className="px-6 py-4">Mois</th>
-            <th scope="col" className="px-6 py-4">Catégorie</th>
-          </tr>
-        </thead>
-        <tbody className="bg-gray-50 divide-y divide-gray-300">
-          {renderPayments()}
-        </tbody>
-      </table>
+      {months.map((month, idx) => {
+        const monthlyPayments = paymentsByMonth[month];
+        const positiveSum = monthlyPayments.filter(p => p.amount >= 0).reduce((sum, p) => sum + p.amount, 0);
+        const negativeSum = monthlyPayments.filter(p => p.amount < 0).reduce((sum, p) => sum + p.amount, 0);
+        return (
+          <React.Fragment key={month}>
+            {idx > 0 && <div style={{height: 18}}></div>}
+            <table className="w-full text-base text-left text-gray-700 mb-0">
+              <thead className="text-sm text-white uppercase bg-indigo-500">
+                <tr>
+                  <th scope="col" className="px-6 py-4">Actions</th>
+                  <th scope="col" className="px-6 py-4">Source</th>
+                  <th scope="col" className="px-6 py-4">Montant</th>
+                  <th scope="col" className="px-6 py-4">Date</th>
+                  <th scope="col" className="px-6 py-4">Mois</th>
+                  <th scope="col" className="px-6 py-4">Catégorie</th>
+                </tr>
+              </thead>
+              <tbody className="bg-gray-50 divide-y divide-gray-300">
+                <tr className="bg-blue-100 font-bold text-gray-800 uppercase">
+                  <td colSpan="6" className="px-4 py-2">
+                    <div className="flex items-center w-full">
+                      <span className="pl-2 text-left flex items-center gap-4">
+                        {month}
+                        <span className="border-l-2 border-blue-300 h-6 mx-3"></span>
+                        <span className="text-green-600">+{positiveSum.toFixed(2)}</span>
+                        <span className="text-red-600 ml-4">{negativeSum.toFixed(2)}</span>
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                {monthlyPayments.map(payment => (
+                  <tr key={payment.id} className={payment.amount >= 0 ? 'bg-green-50' : 'bg-red-50'}>
+                    <td className="p-2">
+                      <button className="text-blue-500 hover:underline cursor-pointer" onClick={() => handleEditClick(payment.id)}>✏️</button>
+                      <button className="text-red-500 hover:underline ml-2 cursor-pointer" onClick={() => handleDeleteClick(payment.id)}>🗑️</button>
+                    </td>
+                    <td className="p-2">{payment.source}</td>
+                    <td className="p-2">{payment.amount.toFixed(2)}</td>
+                    <td className="p-2">{payment.sampling_date}</td>
+                    <td className="p-2">{payment.nbr_month}</td>
+                    <td className={`p-2 ${categoryColors[payment.category] || ''}`}>{payment.category || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </React.Fragment>
+        );
+      })}
       {/* Modale choix édition/suppression masse ou non */}
       {massActionModal.show && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 className="text-lg font-bold mb-4 text-gray-800">
-              {massActionModal.action === 'edit' ? 'Modification d’un paiement récurrent' : 'Suppression d’un paiement récurrent'}
+          <div className="bg-white p-8 rounded-2xl shadow-2xl w-[420px] max-w-full relative animate-fade-in">
+            <h2 className="text-2xl font-extrabold mb-6 text-indigo-700 flex items-center gap-2">
+              <span>{massActionModal.action === 'edit' ? '📝' : '🗑️'}</span> {massActionModal.action === 'edit' ? 'Modification d’un paiement récurrent' : 'Suppression d’un paiement récurrent'}
             </h2>
-            <p className="mb-6 text-gray-700">
-              Ce paiement fait partie d’une série ({massActionModal.payment.nbr_month} mois). Voulez-vous {massActionModal.action === 'edit' ? 'modifier' : 'supprimer'} seulement ce paiement ou tous les paiements liés&nbsp;?
+            <p className="mb-8 text-gray-700 text-lg text-center">
+              Ce paiement fait partie d’une série <span className="font-bold text-indigo-600">({massActionModal.payment.nbr_month} mois)</span>.<br />
+              Voulez-vous {massActionModal.action === 'edit' ? 'modifier' : 'supprimer'}&nbsp;:
             </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setMassActionModal({ show: false, payment: null, action: null })}
-                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-              >
-                Annuler
-              </button>
+            <div className="flex flex-col gap-3">
               {massActionModal.action === 'edit' ? (
                 <>
                   <button
                     onClick={handleEditSingle}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="flex items-center gap-2 px-5 py-3 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-base font-semibold shadow"
                   >
-                    Modifier seulement celui-ci
+                    <span className="text-xl">✏️</span> Modifier <span className="font-bold ml-1">seulement ce paiement</span>
                   </button>
                   <button
                     onClick={handleEditMass}
-                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    className="flex items-center gap-2 px-5 py-3 w-full bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-base font-semibold shadow"
                   >
-                    Modifier tous
+                    <span className="text-xl">🔄</span> Modifier <span className="font-bold ml-1">tous les paiements liés</span>
                   </button>
                 </>
               ) : (
                 <>
                   <button
                     onClick={handleDeleteSingle}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="flex items-center gap-2 px-5 py-3 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-base font-semibold shadow"
                   >
-                    Supprimer seulement celui-ci
+                    <span className="text-xl">🗑️</span> Supprimer <span className="font-bold ml-1">seulement ce paiement</span>
                   </button>
                   <button
                     onClick={handleDeleteMass}
-                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                    className="flex items-center gap-2 px-5 py-3 w-full bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-base font-semibold shadow"
                   >
-                    Supprimer tous
+                    <span className="text-xl">🗑️</span> Supprimer <span className="font-bold ml-1">tous les paiements liés</span>
                   </button>
                 </>
               )}
+              <button
+                onClick={() => setMassActionModal({ show: false, payment: null, action: null })}
+                className="flex items-center gap-2 px-5 py-3 w-full bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition text-base font-semibold shadow mt-2"
+              >
+                <span className="text-xl">❌</span> Annuler
+              </button>
             </div>
           </div>
         </div>

@@ -3,6 +3,20 @@ import { FiSettings } from 'react-icons/fi';
 
 const { ipcRenderer } = window.require ? window.require('electron') : { ipcRenderer: null };
 
+// Palette d'icônes pour chaque catégorie
+const categoryIcons = {
+  'Loyer': '🏠',
+  'Alimentation': '🛒',
+  'Loisirs': '🎉',
+  'Transports': '🚗',
+  'Santé': '💊',
+  'Abonnements': '📺',
+  'Impôts': '💸',
+  'Divers': '🧩',
+  'Salaires': '💼',
+  'Crédit': '🏦',
+};
+
 const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPayment, refreshAll }) => {
   const [formData, setFormData] = useState({
     id: '',
@@ -235,7 +249,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       setInfoModal({ show: true, message: 'Date invalide ou manquante.', type: 'error' });
       return;
     }
-    // Si on est en édition d'un paiement récurrent, proposer la modale
+    // Afficher la modale d'édition en masse uniquement si on MODIFIE un paiement récurrent
     if (
       editingPayment && editingPayment.unique_id && Number(formData.months) > 1
     ) {
@@ -270,19 +284,6 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     setInfoModal({ show: true, message: 'Paiement modifié avec succès.', type: 'success' });
   };
 
-  const handleBatchUpdate = async (e) => {
-    e.preventDefault();
-    await window.api.updateBySource({
-      source: batchData.batchSource,
-      newAmount: batchData.batchAmount,
-      startDate: batchData.batchStart,
-      endDate: batchData.batchEnd,
-    });
-    await refreshAll(); // Utilisation de refreshAll passé comme prop
-    setBatchData({ batchSource: '', batchAmount: '', batchStart: '', batchEnd: '' });
-    setShowBatchModal(false);
-  };
-
   // Handler édition du montant limite
   const handleLimitAmountChange = (e) => {
     setLimitAmountInput(e.target.value.replace(/[^\d.,]/g, ''));
@@ -303,6 +304,129 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       >
         <FiSettings />
       </button>
+      {/* Formulaire amélioré EN PREMIER */}
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Formulaires d'ajout de paiement</h2>
+      <form onSubmit={handleSubmit} className="space-y-3 mb-8">
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+            <div className="relative">
+              <input
+                type="text"
+                id="source"
+                name="source"
+                placeholder="Source"
+                value={formData.source}
+                onChange={handleChange}
+                onFocus={() => setShowSuggestions(suggestions.length > 0)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                autoComplete="off"
+                required
+              />
+              {showSuggestions && (
+                <ul className="absolute left-0 right-0 bg-white border border-gray-300 rounded-lg shadow z-20 max-h-40 overflow-y-auto mt-1">
+                  {suggestions.map((s, idx) => (
+                    <li
+                      key={s + idx}
+                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                      onMouseDown={() => handleSuggestionClick(s)}
+                    >
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <div className="w-32">
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">Montant</label>
+            <input
+              type="number"
+              id="amount"
+              name="amount"
+              placeholder="Montant"
+              value={formData.amount}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              step="0.01"
+              required
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label htmlFor="sampling_date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input
+              type="date"
+              id="sampling_date"
+              name="sampling_date"
+              value={formData.sampling_date}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            />
+          </div>
+          <div className="w-32">
+            <label htmlFor="months" className="block text-sm font-medium text-gray-700 mb-1">Mois répé.</label>
+            <input
+              type="number"
+              id="months"
+              name="months"
+              placeholder="Mois"
+              value={formData.months}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+          <select
+            id="category"
+            name="category"
+            value={formData.category || ''}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            required
+          >
+            <option value="" disabled>Catégorie</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat} className={categoryColors[cat] || ''}>
+                {categoryIcons[cat] ? `${categoryIcons[cat]} ` : ''}{cat}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 text-base"
+        >
+          Enregistrer
+        </button>
+        {editingPayment && (
+          <button
+            type="button"
+            onClick={() => {
+              setFormData({
+                id: '',
+                source: '',
+                amount: '',
+                sampling_date: new Date().toISOString().split('T')[0],
+                months: '1',
+                pause: false,
+                category: ''
+              });
+              onCancel();
+              setInfoModal({ show: true, message: 'Modification annulée.', type: 'info' });
+            }}
+            className="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition duration-300 text-base"
+          >
+            Annuler
+          </button>
+        )}
+      </form>
       {/* Menu paramètres */}
       {showSettings && (
         <div className="absolute top-14 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 flex flex-col space-y-2 min-w-[220px] pr-6 pt-6 ">
@@ -335,179 +459,47 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
           </button>
         </div>
       )}
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Formulaires d'ajout de paiement</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="relative">
+      {/* Solde mis en évidence */}
+      <div className="mt-6">
+        <h2 className="text-base font-semibold text-gray-700 flex items-center gap-2 mb-2">
+          <span className="text-xl">💰</span> Solde
+        </h2>
+        <div className={`text-2xl font-semibold px-4 py-2 rounded-lg border ${balance >= 0 ? 'text-green-700 border-green-200 bg-green-50' : 'text-red-700 border-red-200 bg-red-50'} flex items-center justify-center`} style={{letterSpacing: '0.5px', fontFamily: 'inherit'}}>
+          {Number(balance).toFixed(2)} €
+        </div>
+      </div>
+      <div className="mt-6">
+        <div className="flex items-center gap-4 mb-2">
+          <h2 className="text-lg font-bold text-gray-800 mb-0">Date limite</h2>
           <input
-            type="text"
-            name="source"
-            placeholder="Source"
-            value={formData.source}
-            onChange={handleChange}
-            onFocus={() => setShowSuggestions(suggestions.length > 0)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            autoComplete="off"
-            required
+            type="date"
+            value={limitDate}
+            onChange={(e) => onSetLimit(e.target.value)}
+            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ minWidth: '140px' }}
           />
-          {showSuggestions && (
-            <ul className="absolute left-0 right-0 bg-white border border-gray-300 rounded-lg shadow z-20 max-h-40 overflow-y-auto mt-1">
-              {suggestions.map((s, idx) => (
-                <li
-                  key={s + idx}
-                  className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                  onMouseDown={() => handleSuggestionClick(s)}
-                >
-                  {s}
-                </li>
-              ))}
-            </ul>
-          )}
+          <span className="flex items-center gap-2 ml-auto">
+            <span className="text-gray-600 text-sm">Montant limite&nbsp;:</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={limitAmountInput}
+              onChange={handleLimitAmountChange}
+              onBlur={handleLimitAmountBlur}
+              className="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              style={{ fontSize: '1rem' }}
+            />
+            <span className="text-gray-600">€</span>
+          </span>
         </div>
-        <input
-          type="number"
-          name="amount"
-          placeholder="Montant"
-          value={formData.amount}
-          onChange={handleChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          step="0.01"
-          required
-        />
-        <input
-          type="date"
-          name="sampling_date"
-          value={formData.sampling_date}
-          onChange={handleChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <input
-          type="number"
-          name="months"
-          placeholder="Mois répé."
-          value={formData.months}
-          onChange={handleChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <select
-          name="category"
-          value={formData.category || ''}
-          onChange={handleChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        >
-          <option value="" disabled>Catégorie</option>
-          {categories.map(cat => (
-            <option key={cat} value={cat} className={categoryColors[cat] || ''}>
-              {cat}
-            </option>
-          ))}
-        </select>
-        <label className="flex items-center space-x-2">
-          {/* <input
-            type="checkbox"
-            name="pause"
-            checked={formData.pause}
-            onChange={handleChange}
-            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="text-gray-700">Pause</span> */}
-        </label>
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300"
-        >
-          Enregistrer
-        </button>
-        {editingPayment && (
-          <button
-            type="button"
-            onClick={() => {
-              setFormData({
-                id: '',
-                source: '',
-                amount: '',
-                sampling_date: new Date().toISOString().split('T')[0],
-                months: '1',
-                pause: false,
-                category: ''
-              });
-              onCancel();
-              setInfoModal({ show: true, message: 'Modification annulée.', type: 'info' });
-            }}
-            className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition duration-300"
-          >
-            Annuler
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setShowBatchModal(true)}
-          className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition duration-300"
-        >
-          Modifier par source
-        </button>
-      </form>
-
-      {showBatchModal && (
-        <div className="fixed inset-0 bg-black/50  flex items-center justify-center" style={{ zIndex: 1000 }} onClick={() => setShowBatchModal(false)}>
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4">Mise à jour en masse</h2>
-            <form onSubmit={handleBatchUpdate} className="space-y-4">
-              <input
-                type="text"
-                name="batchSource"
-                placeholder="Source"
-                value={batchData.batchSource}
-                onChange={handleBatchChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <input
-                type="number"
-                name="batchAmount"
-                placeholder="Nouveau Montant"
-                value={batchData.batchAmount}
-                onChange={handleBatchChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                step="0.01"
-                required
-              />
-              <input
-                type="date"
-                name="batchStart"
-                value={batchData.batchStart}
-                onChange={handleBatchChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <input
-                type="date"
-                name="batchEnd"
-                value={batchData.batchEnd}
-                onChange={handleBatchChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300"
-              >
-                Appliquer
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowBatchModal(false)}
-                className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition duration-300"
-              >
-                Fermer
-              </button>
-            </form>
+        <hr className="my-2 border-gray-300" />
+        {limitAlert && (
+          <div className="mt-3 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded shadow text-sm flex items-center gap-2">
+            <span role="img" aria-label="alerte">⚠️</span> {limitAlert}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Modale édition en masse */}
       {editMassModal.show && (
@@ -614,43 +606,6 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
           </div>
         </div>
       )}
-
-      <div className="mt-6">
-        <h2 className="text-lg font-bold text-gray-800">Solde</h2>
-        <div className={`text-2xl font-bold ${balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>{balance} €</div>
-      </div>
-      <div className="mt-6">
-        <div className="flex items-center gap-4 mb-2">
-        <span className="text-gray-600 text-sm">Date limite&nbsp;:</span>
-          <input
-            type="date"
-            value={limitDate}
-            onChange={(e) => onSetLimit(e.target.value)}
-            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style={{ minWidth: '140px' }}
-          />
-          <span className="flex items-center gap-2 ml-auto">
-            <span className="text-gray-600 text-sm">Montant limite&nbsp;:</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={limitAmountInput}
-              onChange={handleLimitAmountChange}
-              onBlur={handleLimitAmountBlur}
-              className="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
-              style={{ fontSize: '1rem' }}
-            />
-            <span className="text-gray-600">€</span>
-          </span>
-        </div>
-        <hr className="my-2 border-gray-300" />
-        {limitAlert && (
-          <div className="mt-3 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded shadow text-sm flex items-center gap-2">
-            <span role="img" aria-label="alerte">⚠️</span> {limitAlert}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

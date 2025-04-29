@@ -13,8 +13,6 @@ function getMonthLabel(dateStr) {
 }
 
 export default function Charts({ payments }) {
-  const [open, setOpen] = useState(false);
-
   // Evolution du solde par mois
   const sorted = [...payments].sort((a, b) => a.sampling_date.localeCompare(b.sampling_date));
   let balance = 0;
@@ -67,100 +65,85 @@ export default function Charts({ payments }) {
 
   return (
     <div className="mb-2">
-      <button
-        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition mb-2 shadow"
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-        aria-controls="charts-visualisation"
-      >
-        <FaChartBar className="text-lg" />
-        <span>Visualiser les graphiques</span>
-        {open ? <FaChevronUp className="ml-2" /> : <FaChevronDown className="ml-2" />}
-      </button>
-      <div
-        id="charts-visualisation"
-        className={`transition-all duration-500 overflow-hidden ${open ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
-      >
-        <div className="flex flex-col gap-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Évolution du solde */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-bold mb-2 text-center">Évolution du solde</h3>
-              <Line
-                data={{
-                  labels: months,
-                  datasets: [{
-                    label: 'Solde (€)',
-                    data: balances,
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99,102,241,0.1)',
-                    tension: 0.3,
-                    fill: true,
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { display: false } },
-                  scales: { y: { beginAtZero: true } },
-                }}
-              />
-            </div>
-            {/* Répartition par source */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-bold mb-2 text-center">Répartition par source</h3>
-              <Bar
-                data={{
-                  labels: sourceLabels,
-                  datasets: [{
-                    label: 'Montant (€)',
-                    data: sourceData,
-                    backgroundColor: '#6366f1',
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { display: false } },
-                  indexAxis: 'y',
-                  scales: { x: { beginAtZero: true } },
-                }}
-              />
-            </div>
+      <div className="flex flex-col gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Évolution du solde */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-bold mb-2 text-center">Évolution du solde</h3>
+            <Line
+              data={{
+                labels: months,
+                datasets: [{
+                  label: 'Solde (€)',
+                  data: balances,
+                  borderColor: '#6366f1',
+                  backgroundColor: 'rgba(99,102,241,0.1)',
+                  tension: 0.3,
+                  fill: true,
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } },
+              }}
+            />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Recettes vs Dépenses */}
-            <div className="bg-white rounded-lg shadow p-4 max-w-[320px] mx-auto">
-              <h3 className="font-bold mb-2 text-center">Recettes vs Dépenses</h3>
-              <Pie
-                data={{
-                  labels: ['Recettes', 'Dépenses'],
-                  datasets: [{
-                    data: [recettes, depenses],
-                    backgroundColor: ['#22c55e', '#ef4444'],
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { position: 'bottom' } },
-                }}
-              />
-            </div>
-            {/* Répartition par catégorie */}
-            <div className="bg-white rounded-lg shadow p-4 max-w-[320px] mx-auto">
-              <h3 className="font-bold mb-2 text-center">Répartition par catégorie</h3>
-              <Pie
-                data={{
-                  labels: categoryLabels,
-                  datasets: [{
-                    data: categoryData,
-                    backgroundColor: categoryBgColors,
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { position: 'bottom' } },
-                }}
-              />
-            </div>
+          {/* Répartition par source */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-bold mb-2 text-center">Répartition par source</h3>
+            <Bar
+              data={{
+                labels: sourceLabels,
+                datasets: [{
+                  label: 'Montant (€)',
+                  data: sourceData,
+                  backgroundColor: '#6366f1',
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { display: false } },
+                indexAxis: 'y',
+                scales: { x: { beginAtZero: true } },
+              }}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Recettes vs Dépenses */}
+          <div className="bg-white rounded-lg shadow p-4 max-w-[320px] mx-auto">
+            <h3 className="font-bold mb-2 text-center">Recettes vs Dépenses</h3>
+            <Pie
+              data={{
+                labels: ['Recettes', 'Dépenses'],
+                datasets: [{
+                  data: [recettes, depenses],
+                  backgroundColor: ['#22c55e', '#ef4444'],
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+              }}
+            />
+          </div>
+          {/* Répartition par catégorie */}
+          <div className="bg-white rounded-lg shadow p-4 max-w-[320px] mx-auto">
+            <h3 className="font-bold mb-2 text-center">Répartition par catégorie</h3>
+            <Pie
+              data={{
+                labels: categoryLabels,
+                datasets: [{
+                  data: categoryData,
+                  backgroundColor: categoryBgColors,
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+              }}
+            />
           </div>
         </div>
       </div>

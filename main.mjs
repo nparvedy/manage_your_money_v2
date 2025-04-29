@@ -24,7 +24,7 @@ app.on('ready', async () => {
   });
   mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html')); // Charge le fichier généré par Vite
   
-  win.maximize();
+  mainWindow.maximize();
 });
 
 app.on('window-all-closed', () => {
@@ -46,7 +46,7 @@ app.on('activate', () => {
     });
     mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html')); // Charge le fichier généré par Vite
     
-    win.maximize();
+    mainWindow.maximize();
   }
 });
 
