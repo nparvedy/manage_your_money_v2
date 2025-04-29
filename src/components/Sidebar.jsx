@@ -79,7 +79,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
 
   // Calcul du jour où le solde passe sous le montant limite (en partant du solde réel d'aujourd'hui)
   useEffect(() => {
-    if (!limitAmount || !paymentsPreview.length) {
+    if (limitAmount === undefined || limitAmount === null || !paymentsPreview.length) {
       setLimitAlert('');
       return;
     }
@@ -97,19 +97,30 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         if (!byDate[p.sampling_date]) byDate[p.sampling_date] = 0;
         byDate[p.sampling_date] += p.amount;
       }
-      // Trier les dates à partir d'aujourd'hui
-      const dates = Object.keys(byDate).filter(d => d >= todayIso).sort();
+      const allDates = Object.keys(byDate).sort();
       let solde = soldeInitial;
       let alertDate = null;
-      for (const d of dates) {
+      // Avancer jusqu'à aujourd'hui pour avoir le solde du jour
+      for (const d of allDates) {
+        if (d > todayIso) break;
         solde += byDate[d];
-        if (solde < limitAmount) {
+      }
+      // Vérification simple selon la logique corrigée
+      if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde < limitAmount)) {
+        setLimitAlert(`Attention, aujourd'hui vous avez atteint ou dépassé la limite de ${limitAmount} €.`);
+        return;
+      }
+      // Sinon, on cherche la première date future où la condition est vraie
+      let futureSolde = solde;
+      for (const d of allDates.filter(d => d > todayIso)) {
+        futureSolde += byDate[d];
+        if ((limitAmount > 0 && futureSolde <= limitAmount) || (limitAmount < 0 && futureSolde < limitAmount)) {
           alertDate = d;
           break;
         }
       }
       if (alertDate) {
-        setLimitAlert(`⚠️ Attention, le ${new Date(alertDate).toLocaleDateString('fr-FR')} vous passerez sous la limite de ${limitAmount} €.`);
+        setLimitAlert(`Attention, le ${new Date(alertDate).toLocaleDateString('fr-FR')} vous atteindrez ou dépasserez la limite de ${limitAmount} €.`);
       } else {
         setLimitAlert('');
       }
@@ -286,7 +297,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
 
   // Handler édition du montant limite
   const handleLimitAmountChange = (e) => {
-    setLimitAmountInput(e.target.value.replace(/[^\d.,]/g, ''));
+    setLimitAmountInput(e.target.value.replace(/[^\d.,-]/g, ''));
   };
   const handleLimitAmountBlur = async () => {
     const val = parseFloat(limitAmountInput.replace(',', '.')) || 0;
@@ -482,7 +493,6 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
             <span className="text-gray-600 text-sm">Montant limite&nbsp;:</span>
             <input
               type="number"
-              min="0"
               step="0.01"
               value={limitAmountInput}
               onChange={handleLimitAmountChange}
