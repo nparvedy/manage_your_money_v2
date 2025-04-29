@@ -33,6 +33,11 @@ const initDB = () => {
     db.prepare('ALTER TABLE payment ADD COLUMN category TEXT').run();
   }
 
+  // Migration : ajout colonne unique_id si manquante
+  if (!pragma.some(col => col.name === 'unique_id')) {
+    db.prepare('ALTER TABLE payment ADD COLUMN unique_id TEXT').run();
+  }
+
   // Insérer une ligne initiale dans la table money si elle est vide
   const count = db.prepare('SELECT COUNT(*) AS c FROM money').get().c;
   if (count === 0) {

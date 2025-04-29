@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 const PaymentsTable = ({ payments, onEdit, onDelete }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
+  // Modale choix suppression/édition en masse ou non
+  const [massActionModal, setMassActionModal] = useState({ show: false, payment: null, action: null });
 
   // Filtres avancés
   const [search, setSearch] = useState('');
@@ -35,9 +37,20 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
     return matchSource && matchMin && matchMax && matchDateStart && matchDateEnd;
   });
 
+  // Edition : ouvre directement le formulaire sans modale
+  const handleEditClick = (id) => {
+    onEdit(id);
+  };
+
+  // Suppression : propose la modale si paiement récurrent
   const handleDeleteClick = (id) => {
-    setPaymentToDelete(id);
-    setShowDeleteModal(true);
+    const payment = payments.find((p) => p.id === id);
+    if (payment && payment.unique_id && payment.nbr_month > 1) {
+      setMassActionModal({ show: true, payment, action: 'delete' });
+    } else {
+      setPaymentToDelete(id);
+      setShowDeleteModal(true);
+    }
   };
 
   const confirmDelete = () => {
@@ -51,6 +64,32 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
   const cancelDelete = () => {
     setShowDeleteModal(false);
     setPaymentToDelete(null);
+  };
+
+  // Action édition en masse
+  const handleEditMass = () => {
+    onEdit(massActionModal.payment.id, true); // true = édition en masse
+    setMassActionModal({ show: false, payment: null, action: null });
+  };
+  // Action édition simple
+  const handleEditSingle = () => {
+    onEdit(massActionModal.payment.id, false);
+    setMassActionModal({ show: false, payment: null, action: null });
+  };
+  // Action suppression en masse
+  const handleDeleteMass = async () => {
+    await window.api.deleteByUniqueId(massActionModal.payment.unique_id);
+    setMassActionModal({ show: false, payment: null, action: null });
+    setPaymentToDelete(null);
+    setShowDeleteModal(false);
+    // Rafraîchir la liste (onDelete déclenche le refreshAll côté App)
+    onDelete();
+  };
+  // Action suppression simple
+  const handleDeleteSingle = () => {
+    setPaymentToDelete(massActionModal.payment.id);
+    setShowDeleteModal(true);
+    setMassActionModal({ show: false, payment: null, action: null });
   };
 
   const renderPayments = () => {
@@ -105,7 +144,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
             <button
               className="text-blue-500 hover:underline cursor-pointer"
               onClick={() => {
-                onEdit(payment.id);
+                handleEditClick(payment.id);
               }}
             >
               ✏️
@@ -190,6 +229,58 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
           {renderPayments()}
         </tbody>
       </table>
+      {/* Modale choix édition/suppression masse ou non */}
+      {massActionModal.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-bold mb-4 text-gray-800">
+              {massActionModal.action === 'edit' ? 'Modification d’un paiement récurrent' : 'Suppression d’un paiement récurrent'}
+            </h2>
+            <p className="mb-6 text-gray-700">
+              Ce paiement fait partie d’une série ({massActionModal.payment.nbr_month} mois). Voulez-vous {massActionModal.action === 'edit' ? 'modifier' : 'supprimer'} seulement ce paiement ou tous les paiements liés&nbsp;?
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setMassActionModal({ show: false, payment: null, action: null })}
+                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+              >
+                Annuler
+              </button>
+              {massActionModal.action === 'edit' ? (
+                <>
+                  <button
+                    onClick={handleEditSingle}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Modifier seulement celui-ci
+                  </button>
+                  <button
+                    onClick={handleEditMass}
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                  >
+                    Modifier tous
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleDeleteSingle}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Supprimer seulement celui-ci
+                  </button>
+                  <button
+                    onClick={handleDeleteMass}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Supprimer tous
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">

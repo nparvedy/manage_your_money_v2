@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('api', {
   updatePayment: (data) => ipcRenderer.invoke('payment:update', data),
   deletePayment: (id) => ipcRenderer.invoke('payment:delete', id),
   updateBySource: (params) => ipcRenderer.invoke('payment:updateBySource', params),
+  updateByUniqueId: (params) => ipcRenderer.invoke('payment:updateByUniqueId', params),
+  deleteByUniqueId: (unique_id) => ipcRenderer.invoke('payment:deleteByUniqueId', unique_id),
   getBalance: () => ipcRenderer.invoke('money:get'),
   getLimitDate: () => ipcRenderer.invoke('money:getLimitDate'),
   setLimitDate: (date) => ipcRenderer.invoke('money:setLimitDate', date),

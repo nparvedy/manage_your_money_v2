@@ -50,6 +50,19 @@ app.on('activate', () => {
   }
 });
 
+// Génère un identifiant unique alphanumérique de 10 caractères qui n'existe pas déjà dans la base
+function generateUniqueId() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let id;
+  let exists = true;
+  while (exists) {
+    id = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const row = db.prepare('SELECT 1 FROM payment WHERE unique_id = ? LIMIT 1').get(id);
+    exists = !!row;
+  }
+  return id;
+}
+
 // Gestionnaire pour mettre à jour la date limite
 ipcMain.handle('money:setLimitDate', (event, newDate) => {
   db.prepare('UPDATE money SET limit_date = ?').run(newDate);
@@ -108,15 +121,21 @@ ipcMain.handle('payment:create', (event, data) => {
     throw new Error(`Invalid date value: ${sampling_date}`);
   }
 
+  // Générer un identifiant unique si plusieurs mois
+  let uniqueId = null;
+  if (nbr_month > 1) {
+    uniqueId = generateUniqueId();
+  }
+
   const insert = db.prepare(
-    'INSERT INTO payment (source, amount, sampling_date, nbr_month, pause, category) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO payment (source, amount, sampling_date, nbr_month, pause, category, unique_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
   const ops = [];
   for (let i = 0; i < nbr_month; i++) {
     const date = new Date(sampling_date);
     date.setMonth(date.getMonth() + i);
     const iso = date.toISOString().slice(0, 10);
-    const result = insert.run(source, amount, iso, nbr_month, pause ? 1 : 0, category || '');
+    const result = insert.run(source, amount, iso, nbr_month, pause ? 1 : 0, category || '', uniqueId);
     ops.push(result);
   }
 
@@ -159,10 +178,36 @@ ipcMain.handle('payment:update', (event, data) => {
   if (!data.sampling_date || isNaN(new Date(data.sampling_date).getTime())) {
     throw new Error('Invalid or missing sampling_date');
   }
-
+  // S'assurer que nbr_month est bien mis à jour (converti en nombre)
+  const nbrMonth = data.nbr_month !== undefined ? parseInt(data.nbr_month, 10) : (data.months !== undefined ? parseInt(data.months, 10) : 1);
   db.prepare(
     'UPDATE payment SET source = ?, amount = ?, sampling_date = ?, nbr_month = ?, pause = ?, category = ? WHERE id = ?'
-  ).run(data.source, data.amount, data.sampling_date, data.nbr_month, data.pause ? 1 : 0, data.category || '', data.id);
+  ).run(data.source, data.amount, data.sampling_date, nbrMonth, data.pause ? 1 : 0, data.category || '', data.id);
+  const { limit_date } = db.prepare('SELECT limit_date FROM money LIMIT 1').get();
+  const balance = db.prepare(
+    'SELECT SUM(amount) AS total FROM payment WHERE sampling_date <= ?'
+  ).get(limit_date).total || 0;
+  db.prepare('UPDATE money SET my_money = ?').run(balance);
+  return { success: true, balance };
+});
+
+// Met à jour tous les paiements liés à un unique_id (sauf la date)
+ipcMain.handle('payment:updateByUniqueId', (event, { unique_id, source, amount, nbr_month, pause, category }) => {
+  const stmt = db.prepare(
+    'UPDATE payment SET source = ?, amount = ?, nbr_month = ?, pause = ?, category = ? WHERE unique_id = ?'
+  );
+  const info = stmt.run(source, amount, nbr_month, pause ? 1 : 0, category || '', unique_id);
+  const { limit_date } = db.prepare('SELECT limit_date FROM money LIMIT 1').get();
+  const balance = db.prepare(
+    'SELECT SUM(amount) AS total FROM payment WHERE sampling_date <= ?'
+  ).get(limit_date).total || 0;
+  db.prepare('UPDATE money SET my_money = ?').run(balance);
+  return { changes: info.changes, balance };
+});
+
+// Supprime tous les paiements liés à un unique_id
+ipcMain.handle('payment:deleteByUniqueId', (event, unique_id) => {
+  db.prepare('DELETE FROM payment WHERE unique_id = ?').run(unique_id);
   const { limit_date } = db.prepare('SELECT limit_date FROM money LIMIT 1').get();
   const balance = db.prepare(
     'SELECT SUM(amount) AS total FROM payment WHERE sampling_date <= ?'

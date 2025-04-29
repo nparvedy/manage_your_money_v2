@@ -32,6 +32,9 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Modale pour édition en masse ou non
+  const [editMassModal, setEditMassModal] = useState({ show: false, formData: null });
+
   useEffect(() => {
     // Charger toutes les sources existantes au montage
     window.api.getSources().then((sources) => {
@@ -172,10 +175,39 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       setInfoModal({ show: true, message: 'Date invalide ou manquante.', type: 'error' });
       return;
     }
+    // Si on est en édition d'un paiement récurrent, proposer la modale
+    if (
+      editingPayment && editingPayment.unique_id && Number(formData.months) > 1
+    ) {
+      setEditMassModal({ show: true, formData: { ...formData } });
+      return;
+    }
     await onSubmit(formData);
     setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '' });
     document.activeElement.blur();
     setInfoModal({ show: true, message: 'Paiement ajouté ou modifié avec succès.', type: 'success' });
+    if (editingPayment) onCancel();
+  };
+
+  // Gestion de la modale édition en masse
+  const handleEditMassChoice = async (all) => {
+    if (all) {
+      // Modification de tous les paiements liés (sauf la date)
+      await window.api.updateByUniqueId({
+        unique_id: editingPayment.unique_id,
+        source: editMassModal.formData.source,
+        amount: parseFloat(editMassModal.formData.amount),
+        nbr_month: parseInt(editMassModal.formData.months, 10),
+        pause: editMassModal.formData.pause,
+        category: editMassModal.formData.category || '',
+      });
+      await refreshAll && refreshAll();
+    } else {
+      await onSubmit(editMassModal.formData);
+    }
+    setEditMassModal({ show: false, formData: null });
+    setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '' });
+    setInfoModal({ show: true, message: 'Paiement modifié avec succès.', type: 'success' });
   };
 
   const handleBatchUpdate = async (e) => {
@@ -403,6 +435,41 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
                 Fermer
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modale édition en masse */}
+      {editMassModal.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl w-[420px] max-w-full relative animate-fade-in">
+            <h2 className="text-2xl font-extrabold mb-6 text-indigo-700 flex items-center gap-2">
+              <span>📝</span> Modification d’un paiement récurrent
+            </h2>
+            <p className="mb-8 text-gray-700 text-lg text-center">
+              Ce paiement fait partie d’une série <span className="font-bold text-indigo-600">({formData.months} mois)</span>.<br />
+              Voulez-vous modifier&nbsp;:
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handleEditMassChoice(false)}
+                className="flex items-center gap-2 px-5 py-3 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-base font-semibold shadow"
+              >
+                <span className="text-xl">✏️</span> Modifier <span className="font-bold ml-1">seulement ce paiement</span>
+              </button>
+              <button
+                onClick={() => handleEditMassChoice(true)}
+                className="flex items-center gap-2 px-5 py-3 w-full bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-base font-semibold shadow"
+              >
+                <span className="text-xl">🔄</span> Modifier <span className="font-bold ml-1">tous les paiements liés</span>
+              </button>
+              <button
+                onClick={() => setEditMassModal({ show: false, formData: null })}
+                className="flex items-center gap-2 px-5 py-3 w-full bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition text-base font-semibold shadow mt-2"
+              >
+                <span className="text-xl">❌</span> Annuler
+              </button>
+            </div>
           </div>
         </div>
       )}
