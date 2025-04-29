@@ -14,4 +14,5 @@ contextBridge.exposeInMainWorld('api', {
   dbDownload: () => ipcRenderer.invoke('db:download'),
   dbUpdate: () => ipcRenderer.invoke('db:update'),
   exportPayments: (params) => ipcRenderer.invoke('payments:export', params),
+  getSources: () => ipcRenderer.invoke('payment:getSources'),
 });

@@ -169,6 +169,12 @@ ipcMain.handle('payment:update', (event, data) => {
   return { success: true, balance };
 });
 
+// Gestionnaire pour récupérer toutes les sources distinctes (auto-complétion)
+ipcMain.handle('payment:getSources', () => {
+  const rows = db.prepare("SELECT DISTINCT source FROM payment WHERE source IS NOT NULL AND source != ''").all();
+  return rows.map(r => r.source);
+});
+
 // Téléchargement de la base de données
 ipcMain.handle('db:download', async () => {
   try {

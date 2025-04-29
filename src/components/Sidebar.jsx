@@ -28,6 +28,34 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
   const [exportDates, setExportDates] = useState({ start: '', end: '' });
   const [exportFormat, setExportFormat] = useState('pdf');
 
+  const [allSources, setAllSources] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    // Charger toutes les sources existantes au montage
+    window.api.getSources().then((sources) => {
+      setAllSources(sources || []);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (formData.source && formData.source.length > 0) {
+      const input = formData.source.toLowerCase();
+      const filtered = allSources.filter(s => s.toLowerCase().includes(input) && s.toLowerCase() !== input);
+      setSuggestions(filtered.slice(0, 5));
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [formData.source, allSources]);
+
+  const handleSuggestionClick = (s) => {
+    setFormData({ ...formData, source: s });
+    setShowSuggestions(false);
+  };
+
   const categories = [
     'Loyer',
     'Alimentation',
@@ -207,15 +235,33 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       )}
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Formulaires d'ajout de paiement</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          name="source"
-          placeholder="Source"
-          value={formData.source}
-          onChange={handleChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        <div className="relative">
+          <input
+            type="text"
+            name="source"
+            placeholder="Source"
+            value={formData.source}
+            onChange={handleChange}
+            onFocus={() => setShowSuggestions(suggestions.length > 0)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="off"
+            required
+          />
+          {showSuggestions && (
+            <ul className="absolute left-0 right-0 bg-white border border-gray-300 rounded-lg shadow z-20 max-h-40 overflow-y-auto mt-1">
+              {suggestions.map((s, idx) => (
+                <li
+                  key={s + idx}
+                  className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                  onMouseDown={() => handleSuggestionClick(s)}
+                >
+                  {s}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <input
           type="number"
           name="amount"
