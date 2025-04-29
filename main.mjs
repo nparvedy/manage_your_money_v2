@@ -73,6 +73,18 @@ ipcMain.handle('money:setLimitDate', (event, newDate) => {
   return { success: true, balance: total };
 });
 
+// Récupérer le montant limite
+ipcMain.handle('money:getLimitAmount', () => {
+  const row = db.prepare('SELECT limit_amount FROM money LIMIT 1').get();
+  return row ? row.limit_amount : 0;
+});
+
+// Mettre à jour le montant limite
+ipcMain.handle('money:setLimitAmount', (event, value) => {
+  db.prepare('UPDATE money SET limit_amount = ?').run(value);
+  return { success: true };
+});
+
 // Gestionnaire pour récupérer tous les paiements
 ipcMain.handle('payment:all', (event, limitDate) => {
   // Afficher les paiements jusqu'à la date limite, mais inclure aussi les deux mois précédents
@@ -95,6 +107,18 @@ ipcMain.handle('payment:all', (event, limitDate) => {
   return payments;
 });
 
+// Récupérer tous les paiements à partir d'une date (pour prévision)
+ipcMain.handle('payment:future', (event, fromDate) => {
+  // On prend tous les paiements à partir de fromDate jusqu'à +1 an
+  const endDate = new Date(fromDate);
+  endDate.setFullYear(endDate.getFullYear() + 1);
+  const endIso = endDate.toISOString().slice(0, 10);
+  const rows = db.prepare(
+    'SELECT * FROM payment WHERE sampling_date >= ? AND sampling_date <= ? ORDER BY sampling_date ASC'
+  ).all(fromDate, endIso);
+  return rows;
+});
+
 // Gestionnaire pour récupérer le solde actuel
 ipcMain.handle('money:get', () => {
   const row = db.prepare('SELECT my_money FROM money LIMIT 1').get();
@@ -105,6 +129,12 @@ ipcMain.handle('money:get', () => {
 ipcMain.handle('money:getLimitDate', () => {
   const row = db.prepare('SELECT limit_date FROM money LIMIT 1').get();
   return row ? row.limit_date : null;
+});
+
+// Gestionnaire pour récupérer le solde réel à une date donnée (pour la prévision)
+ipcMain.handle('money:getBalanceAt', (event, date) => {
+  const row = db.prepare('SELECT SUM(amount) as total FROM payment WHERE sampling_date <= ?').get(date);
+  return row && row.total ? Number(row.total) : 0;
 });
 
 // Gestionnaire pour créer un paiement

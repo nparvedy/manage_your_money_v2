@@ -35,12 +35,72 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
   // Modale pour édition en masse ou non
   const [editMassModal, setEditMassModal] = useState({ show: false, formData: null });
 
+  // Montant limite (budget à ne pas dépasser)
+  const [limitAmount, setLimitAmount] = useState(0);
+  const [limitAmountInput, setLimitAmountInput] = useState('');
+  const [limitAlert, setLimitAlert] = useState('');
+  const [paymentsPreview, setPaymentsPreview] = useState([]);
+
   useEffect(() => {
     // Charger toutes les sources existantes au montage
     window.api.getSources().then((sources) => {
       setAllSources(sources || []);
     });
   }, []);
+
+  // Charger le montant limite au montage
+  useEffect(() => {
+    window.api.getLimitAmount().then((v) => {
+      setLimitAmount(Number(v) || 0);
+      setLimitAmountInput(String(v || ''));
+    });
+  }, []);
+
+  // Charger les paiements pour prévision (à partir d'aujourd'hui, sur 1 an)
+  useEffect(() => {
+    const today = new Date();
+    const todayIso = today.toISOString().slice(0, 10);
+    window.api.getFuturePayments(todayIso).then((p) => setPaymentsPreview(p || []));
+  }, [limitDate, balance]);
+
+  // Calcul du jour où le solde passe sous le montant limite (en partant du solde réel d'aujourd'hui)
+  useEffect(() => {
+    if (!limitAmount || !paymentsPreview.length) {
+      setLimitAlert('');
+      return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayIso = today.toISOString().slice(0, 10);
+    // Calculer la date d'hier
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayIso = yesterday.toISOString().slice(0, 10);
+    window.api.getBalanceAt(yesterdayIso).then((soldeInitial) => {
+      // Grouper les paiements par date
+      const byDate = {};
+      for (const p of paymentsPreview) {
+        if (!byDate[p.sampling_date]) byDate[p.sampling_date] = 0;
+        byDate[p.sampling_date] += p.amount;
+      }
+      // Trier les dates à partir d'aujourd'hui
+      const dates = Object.keys(byDate).filter(d => d >= todayIso).sort();
+      let solde = soldeInitial;
+      let alertDate = null;
+      for (const d of dates) {
+        solde += byDate[d];
+        if (solde < limitAmount) {
+          alertDate = d;
+          break;
+        }
+      }
+      if (alertDate) {
+        setLimitAlert(`⚠️ Attention, le ${new Date(alertDate).toLocaleDateString('fr-FR')} vous passerez sous la limite de ${limitAmount} €.`);
+      } else {
+        setLimitAlert('');
+      }
+    });
+  }, [limitAmount, paymentsPreview]);
 
   useEffect(() => {
     if (formData.source && formData.source.length > 0) {
@@ -221,6 +281,16 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     await refreshAll(); // Utilisation de refreshAll passé comme prop
     setBatchData({ batchSource: '', batchAmount: '', batchStart: '', batchEnd: '' });
     setShowBatchModal(false);
+  };
+
+  // Handler édition du montant limite
+  const handleLimitAmountChange = (e) => {
+    setLimitAmountInput(e.target.value.replace(/[^\d.,]/g, ''));
+  };
+  const handleLimitAmountBlur = async () => {
+    const val = parseFloat(limitAmountInput.replace(',', '.')) || 0;
+    setLimitAmount(val);
+    await window.api.setLimitAmount(val);
   };
 
   return (
@@ -550,13 +620,36 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         <div className={`text-2xl font-bold ${balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>{balance} €</div>
       </div>
       <div className="mt-6">
-        <h2 className="text-lg font-bold text-gray-800">Date limite</h2>
-        <input
-          type="date"
-          value={limitDate}
-          onChange={(e) => onSetLimit(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex items-center gap-4 mb-2">
+        <span className="text-gray-600 text-sm">Date limite&nbsp;:</span>
+          <input
+            type="date"
+            value={limitDate}
+            onChange={(e) => onSetLimit(e.target.value)}
+            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ minWidth: '140px' }}
+          />
+          <span className="flex items-center gap-2 ml-auto">
+            <span className="text-gray-600 text-sm">Montant limite&nbsp;:</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={limitAmountInput}
+              onChange={handleLimitAmountChange}
+              onBlur={handleLimitAmountBlur}
+              className="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              style={{ fontSize: '1rem' }}
+            />
+            <span className="text-gray-600">€</span>
+          </span>
+        </div>
+        <hr className="my-2 border-gray-300" />
+        {limitAlert && (
+          <div className="mt-3 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded shadow text-sm flex items-center gap-2">
+            <span role="img" aria-label="alerte">⚠️</span> {limitAlert}
+          </div>
+        )}
       </div>
     </div>
   );

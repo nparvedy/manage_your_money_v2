@@ -38,6 +38,13 @@ const initDB = () => {
     db.prepare('ALTER TABLE payment ADD COLUMN unique_id TEXT').run();
   }
 
+  // Migration : ajout colonne limit_amount si manquante
+  const pragmaMoney = db.prepare("PRAGMA table_info(money)").all();
+  if (!pragmaMoney.some(col => col.name === 'limit_amount')) {
+    db.prepare('ALTER TABLE money ADD COLUMN limit_amount DECIMAL DEFAULT 0').run();
+    db.prepare('UPDATE money SET limit_amount = 0').run();
+  }
+
   // Insérer une ligne initiale dans la table money si elle est vide
   const count = db.prepare('SELECT COUNT(*) AS c FROM money').get().c;
   if (count === 0) {
