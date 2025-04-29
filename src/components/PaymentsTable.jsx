@@ -86,7 +86,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
   };
 
   return (
-    <div className="relative overflow-x-auto shadow-lg rounded-lg z-10">
+    <div className="relative overflow-x-auto z-10">
       {/* Filtres avancés */}
       <div className="flex flex-wrap gap-2 p-4 bg-gray-100 rounded-t-lg border-b border-gray-300">
         <input type="text" placeholder="Rechercher par source..." value={search} onChange={e => setSearch(e.target.value)} className="p-2 border border-gray-300 rounded" />
@@ -102,8 +102,8 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
         const negativeSum = monthlyPayments.filter(p => p.amount < 0).reduce((sum, p) => sum + p.amount, 0);
         return (
           <React.Fragment key={month}>
-            {idx > 0 && <div style={{height: 18}}></div>}
-            <table className="w-full text-base text-left text-gray-700 mb-0">
+            {idx > 0 && <div style={{height: 32}}></div>}
+            <table className="w-full text-base text-left text-gray-700 mb-0 shadow-md rounded-lg">
               <thead className="text-sm text-white uppercase bg-indigo-500">
                 <tr>
                   <th scope="col" className="px-6 py-4">Actions</th>

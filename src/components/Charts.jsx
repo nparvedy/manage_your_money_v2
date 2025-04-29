@@ -12,20 +12,31 @@ function getMonthLabel(dateStr) {
   return d.toLocaleString('fr-FR', { month: 'short', year: '2-digit' });
 }
 
-export default function Charts({ payments }) {
-  // Evolution du solde par mois
-  const sorted = [...payments].sort((a, b) => a.sampling_date.localeCompare(b.sampling_date));
-  let balance = 0;
-  const balanceByMonth = {};
-  sorted.forEach((p) => {
-    const label = getMonthLabel(p.sampling_date);
-    balance += p.amount;
-    balanceByMonth[label] = balance;
-  });
-  const months = Object.keys(balanceByMonth);
-  const balances = Object.values(balanceByMonth);
+export default function Charts({ payments, dateStart, dateEnd }) {
+  // Détermine la plage de dates sélectionnée
+  const start = dateStart ? new Date(dateStart) : null;
+  const end = dateEnd ? new Date(dateEnd) : null;
 
-  // Répartition par source (recettes/dépenses)
+  // Filtre les paiements dans la plage sélectionnée
+  const filtered = payments.filter(p => {
+    const d = new Date(p.sampling_date);
+    return (!start || d >= start) && (!end || d <= end);
+  });
+  // Tri par date croissante
+  const sorted = [...filtered].sort((a, b) => a.sampling_date.localeCompare(b.sampling_date));
+
+  // Evolution du solde sur la plage sélectionnée
+  let balance = 0;
+  const balanceByDay = {};
+  sorted.forEach((p) => {
+    const label = new Date(p.sampling_date).toLocaleDateString('fr-FR');
+    balance += p.amount;
+    balanceByDay[label] = balance;
+  });
+  const days = Object.keys(balanceByDay);
+  const balances = Object.values(balanceByDay);
+
+  // Répartition par source (sur la plage)
   const sources = {};
   sorted.forEach((p) => {
     if (!sources[p.source]) sources[p.source] = 0;
@@ -34,9 +45,9 @@ export default function Charts({ payments }) {
   const sourceLabels = Object.keys(sources);
   const sourceData = Object.values(sources);
 
-  // Répartition recettes/dépenses
-  const recettes = payments.filter(p => p.amount >= 0).reduce((sum, p) => sum + p.amount, 0);
-  const depenses = payments.filter(p => p.amount < 0).reduce((sum, p) => sum + Math.abs(p.amount), 0);
+  // Répartition recettes/dépenses (sur la plage)
+  const recettes = filtered.filter(p => p.amount >= 0).reduce((sum, p) => sum + p.amount, 0);
+  const depenses = filtered.filter(p => p.amount < 0).reduce((sum, p) => sum + Math.abs(p.amount), 0);
 
   // Palette de couleurs pour chaque catégorie
   const categoryColors = {
@@ -52,9 +63,9 @@ export default function Charts({ payments }) {
     'Crédit': '#22d3ee',
   };
 
-  // Répartition par catégorie
+  // Répartition par catégorie (sur la plage)
   const categories = {};
-  payments.forEach((p) => {
+  filtered.forEach((p) => {
     const cat = p.category || 'Divers';
     if (!categories[cat]) categories[cat] = 0;
     categories[cat] += p.amount;
@@ -72,7 +83,7 @@ export default function Charts({ payments }) {
             <h3 className="font-bold mb-2 text-center">Évolution du solde</h3>
             <Line
               data={{
-                labels: months,
+                labels: days,
                 datasets: [{
                   label: 'Solde (€)',
                   data: balances,

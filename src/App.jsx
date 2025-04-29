@@ -11,6 +11,8 @@ const App = () => {
   const [editingPayment, setEditingPayment] = useState(null);
   const [showCharts, setShowCharts] = useState(false);
   const [chartsVisible, setChartsVisible] = useState(false);
+  const [chartsDateStart, setChartsDateStart] = useState('');
+  const [chartsDateEnd, setChartsDateEnd] = useState('');
 
   const fetchData = async () => {
     const fetchedLimitDate = await window.api.getLimitDate();
@@ -46,6 +48,18 @@ const App = () => {
       return () => clearTimeout(timeout);
     }
   }, [showCharts]);
+
+  // Initialiser la plage par défaut au mois courant de la date limite
+  useEffect(() => {
+    if (limitDate) {
+      const d = new Date(limitDate);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const firstDay = new Date(year, month, 1).toISOString().slice(0, 10);
+      setChartsDateStart(firstDay);
+      setChartsDateEnd(limitDate);
+    }
+  }, [limitDate]);
 
   const handleAddOrUpdatePayment = async (data) => {
     try {
@@ -121,7 +135,21 @@ const App = () => {
           className={`transition-all duration-500 overflow-hidden ${showCharts ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className={`transition-all duration-500 ${showCharts ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-            {chartsVisible && <Charts payments={payments} />}
+            {chartsVisible && (
+              <>
+                <div className="flex flex-wrap gap-4 mb-4 items-end">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Début</label>
+                    <input type="date" value={chartsDateStart} onChange={e => setChartsDateStart(e.target.value)} className="p-2 border border-gray-300 rounded" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Fin</label>
+                    <input type="date" value={chartsDateEnd} onChange={e => setChartsDateEnd(e.target.value)} className="p-2 border border-gray-300 rounded" min={chartsDateStart} max={limitDate} />
+                  </div>
+                </div>
+                <Charts payments={payments} dateStart={chartsDateStart} dateEnd={chartsDateEnd} />
+              </>
+            )}
           </div>
         </div>
         <PaymentsTable

@@ -470,7 +470,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       </div>
       <div className="mt-6">
         <div className="flex items-center gap-4 mb-2">
-          <h2 className="text-lg font-bold text-gray-800 mb-0">Date limite</h2>
+          <span className="text-gray-600 text-sm">Date limite&nbsp;:</span>
           <input
             type="date"
             value={limitDate}
