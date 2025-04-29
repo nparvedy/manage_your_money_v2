@@ -323,9 +323,16 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
           <button
             type="button"
             onClick={() => {
-              setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '' });
+              setFormData({
+                id: '',
+                source: '',
+                amount: '',
+                sampling_date: new Date().toISOString().split('T')[0],
+                months: '1',
+                pause: false,
+                category: ''
+              });
               onCancel();
-              setTimeout(() => setFormData({}), 0);
               setInfoModal({ show: true, message: 'Modification annulée.', type: 'info' });
             }}
             className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition duration-300"

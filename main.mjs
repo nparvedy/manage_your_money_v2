@@ -14,16 +14,17 @@ app.on('ready', async () => {
   await session.defaultSession.clearCache();
 
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1920,
+    height: 1080,
     webPreferences: {
       preload: path.join(__dirname, 'src', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
-
   mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html')); // Charge le fichier généré par Vite
+  
+  win.maximize();
 });
 
 app.on('window-all-closed', () => {
@@ -35,16 +36,17 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     mainWindow = new BrowserWindow({
-      width: 800,
-      height: 600,
+      width: 1920,
+      height: 1080,
       webPreferences: {
         preload: path.join(__dirname, 'src', 'preload.js'),
         contextIsolation: true,
         nodeIntegration: false,
       },
     });
-
     mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html')); // Charge le fichier généré par Vite
+    
+    win.maximize();
   }
 });
 
