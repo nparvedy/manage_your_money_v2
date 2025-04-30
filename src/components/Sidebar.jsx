@@ -54,6 +54,34 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
   const [limitAmountInput, setLimitAmountInput] = useState('');
   const [limitAlert, setLimitAlert] = useState('');
   const [paymentsPreview, setPaymentsPreview] = useState([]);
+  // Montant restant avant d’atteindre la limite à la date choisie
+  const [remainingBeforeLimit, setRemainingBeforeLimit] = useState(null);
+
+  // Date de retour du budget (première date où le solde repasse au-dessus de la limite)
+  const [budgetReturnDate, setBudgetReturnDate] = useState(null);
+
+  // Date de dépassement de la limite
+  const [budgetExceededDate, setBudgetExceededDate] = useState(null);
+
+  // Pour la répartition du montant restant
+  const [splitMode, setSplitMode] = useState('day'); // 'day' ou 'week'
+  const [splitStartDay, setSplitStartDay] = useState('lundi'); // jour de début de semaine
+  const [periodBudget, setPeriodBudget] = useState(null); // budget max par période
+  const [periodSpent, setPeriodSpent] = useState(null); // total dépensé sur la période courante
+  const [periodLeft, setPeriodLeft] = useState(null); // reste à dépenser sur la période courante
+
+  // Période de budget dynamique (du jour au jour avant prochaine rentrée d'argent ou date limite)
+  const [budgetPeriod, setBudgetPeriod] = useState({ start: null, end: null });
+
+  // Solde du jour pour bloquer le budget si sous la limite
+  const [todayBalance, setTodayBalance] = useState(null);
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0,10);
+    window.api.getBalanceAt(today).then((solde) => setTodayBalance(Number(solde)));
+  }, [limitAmount, paymentsPreview, limitDate]);
+
+  // Liste des jours de la semaine
+  const weekDays = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
   useEffect(() => {
     // Charger toutes les sources existantes au montage
@@ -78,53 +106,47 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     // Afficher le solde actuel d'aujourd'hui dans la console
   }, [limitDate, balance]);
 
-  // Calcul du jour où le solde passe sous le montant limite (en partant du solde réel d'aujourd'hui)
+  // Calcul du jour où le solde passe sous le montant limite ET du retour au-dessus
   useEffect(() => {
     if (limitAmount === undefined || limitAmount === null || !paymentsPreview.length) {
       setLimitAlert('');
+      setBudgetReturnDate(null);
+      setBudgetExceededDate(null);
       return;
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const localIso = today.toLocaleDateString('fr-CA');
-    // Calculer la date d'hier
     window.api.getBalanceAt(localIso).then((soldeInitial) => {
-      // Récupérer tous les paiements à venir (jusqu'à 60 jours)
       window.api.getFuturePayments(localIso).then((payments) => {
         let solde = soldeInitial;
-        // Paiements groupés par date
         const byDate = {};
         for (const p of payments || []) {
           if (!byDate[p.sampling_date]) byDate[p.sampling_date] = 0;
           byDate[p.sampling_date] += p.amount;
         }
-        // Générer la liste des 60 prochains jours
         const allDates = [];
         let d = new Date(localIso);
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 120; i++) { // 120 jours pour couvrir le retour
           allDates.push(d.toISOString().slice(0, 10));
           d.setDate(d.getDate() + 1);
         }
         let alertDate = null;
-        // On vérifie si le solde passe sous le montant limite pour la première fois
-        if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount)) {
-          alertDate = localIso;
-        }else {
-          for (const date of allDates) {
-            if (date !== localIso) {
-              // On ne prend pas en compte la date d'aujourd'hui
-              // On additionne le solde d'hier avec les paiements à venir
-              if (byDate[date]) solde += byDate[date];
-              // On vérifie si le solde passe sous le montant limite pour la première fois
-              // On arrête la boucle si on a trouvé une date d'alerte
-              if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount)) {
-                alertDate = date;
-                break;
-              }
+        let wasUnder = (limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount);
+        let returnDate = null;
+        for (const date of allDates) {
+          if (date !== localIso) {
+            if (byDate[date]) solde += byDate[date];
+            if (!alertDate && ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount))) {
+              alertDate = date;
+              wasUnder = true;
+            }
+            if (wasUnder && ((limitAmount > 0 && solde > limitAmount) || (limitAmount < 0 && solde > limitAmount))) {
+              returnDate = date;
+              break;
             }
           }
         }
-
         if (alertDate) {
           if (alertDate === localIso) {
             setLimitAlert(`Attention, aujourd'hui vous avez atteint ou dépassé la limite de ${limitAmount} €.`);
@@ -134,9 +156,22 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         } else {
           setLimitAlert('');
         }
+        setBudgetExceededDate(alertDate ? new Date(alertDate) : null);
+        setBudgetReturnDate(returnDate ? new Date(returnDate) : null);
       });
     });
   }, [limitAmount, paymentsPreview]);
+
+  // Calcul du montant restant avant d’atteindre la limite à la date choisie
+  useEffect(() => {
+    if (!limitDate || limitAmount === undefined || limitAmount === null) {
+      setRemainingBeforeLimit(null);
+      return;
+    }
+    window.api.getBalanceAt(limitDate).then((solde) => {
+      setRemainingBeforeLimit(Number(solde) - Number(limitAmount));
+    });
+  }, [limitDate, limitAmount, paymentsPreview]);
 
   useEffect(() => {
     if (formData.source && formData.source.length > 0) {
@@ -315,6 +350,58 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     setLimitAmount(val);
     await window.api.setLimitAmount(val);
   };
+
+  // Calcul du nombre de jours ou semaines restants (période dynamique)
+  useEffect(() => {
+    if (remainingBeforeLimit === null || remainingBeforeLimit <= 0 || !limitDate) {
+      setPeriodBudget(null);
+      setBudgetPeriod({ start: null, end: null });
+      return;
+    }
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    // Chercher la prochaine rentrée d'argent (paiement positif) après aujourd'hui
+    window.api.getPayments(limitDate).then(payments => {
+      // Filtrer les rentrées d'argent futures
+      const nextIncome = payments
+        .filter(p => p.amount > 0 && p.sampling_date > todayStr)
+        .sort((a, b) => a.sampling_date.localeCompare(b.sampling_date))[0];
+      let periodEnd;
+      if (nextIncome) {
+        // La période s'arrête la veille de la prochaine rentrée
+        const d = new Date(nextIncome.sampling_date);
+        d.setDate(d.getDate() - 1);
+        periodEnd = d;
+      } else {
+        // Sinon, la période va jusqu'à la date limite
+        periodEnd = new Date(limitDate);
+      }
+      // Calcul du nombre de jours (inclusif)
+      const days = Math.max(1, Math.ceil((periodEnd - today) / (1000*60*60*24)) + 1);
+      setBudgetPeriod({ start: new Date(today), end: periodEnd });
+      if (splitMode === 'day') {
+        const budget = remainingBeforeLimit / days;
+        setPeriodBudget(budget);
+      } else if (splitMode === 'week') {
+        // Calcul du nombre de semaines entières dans la période
+        let start = new Date(today);
+        const weekDaysIdx = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+        const startDayIdx = weekDaysIdx.indexOf(splitStartDay);
+        let jsDay = start.getDay();
+        jsDay = (jsDay + 6) % 7;
+        let diff = (startDayIdx - jsDay + 7) % 7;
+        if (diff !== 0) start.setDate(start.getDate() + diff);
+        let weeks = 0;
+        let d = new Date(start);
+        while (d <= periodEnd) {
+          weeks++;
+          d.setDate(d.getDate() + 7);
+        }
+        const budget = remainingBeforeLimit / weeks;
+        setPeriodBudget(budget);
+      }
+    });
+  }, [splitMode, splitStartDay, remainingBeforeLimit, limitDate, paymentsPreview]);
 
   return (
     <div className="w-full md:w-1/4 bg-white shadow-md rounded-lg p-6 relative">
@@ -514,6 +601,71 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
             <span className="text-gray-600">€</span>
           </span>
         </div>
+        {/* Affichage du montant restant avant la limite */}
+        {remainingBeforeLimit !== null && (
+          <div className={`mt-2 text-sm font-semibold flex items-center gap-2 ${remainingBeforeLimit > 0 ? 'text-green-700' : 'text-red-700'}`}>
+            <span>Montant restant avant la limite&nbsp;:</span>
+            <span>{remainingBeforeLimit.toFixed(2)} €</span>
+          </div>
+        )}
+        {/* Sélecteur de répartition */}
+        
+        {remainingBeforeLimit !== null && remainingBeforeLimit > 0 && (
+          (() => {
+            // Affichage grisé si aujourd'hui est entre la date de dépassement et la date de retour
+            let showBudgetGrise = false;
+            if (budgetExceededDate && budgetReturnDate) {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              if (today >= budgetExceededDate && today < budgetReturnDate) {
+                showBudgetGrise = true;
+              }
+            }
+            // On garde aussi le cas où une alerte est présente (pour compatibilité)
+            if (limitAlert && !showBudgetGrise) showBudgetGrise = true;
+            return (
+              <div className={`mt-3 p-3 border-l-4 rounded ${showBudgetGrise ? 'bg-gray-100 border-gray-300 opacity-60 pointer-events-none select-none' : 'bg-blue-50 border-blue-400'}`}>
+                {showBudgetGrise ? (
+                  <div className="text-sm text-gray-500 font-semibold">
+                    Le budget sera disponible seulement à la date où le solde repassera au-dessus du montant limite.<br/>
+                    {budgetReturnDate && (
+                      <span className="block mt-1">Date de retour du budget&nbsp;: <span className="font-bold text-blue-700">{budgetReturnDate.toLocaleDateString('fr-FR')}</span></span>
+                    )}
+                    <span className="text-red-600 font-bold block mt-2">Toute dépense est fortement déconseillée.</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-gray-700 text-sm">Répartir par&nbsp;:</span>
+                      <select value={splitMode} onChange={e => setSplitMode(e.target.value)} className="p-1 border rounded">
+                        <option value="day">Jour</option>
+                        <option value="week">Semaine</option>
+                      </select>
+                      {splitMode === 'week' && (
+                        <>
+                          <span className="ml-2 text-gray-700 text-sm">Début&nbsp;:</span>
+                          <select value={splitStartDay} onChange={e => setSplitStartDay(e.target.value)} className="p-1 border rounded">
+                            {weekDays.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
+                          </select>
+                        </>
+                      )}
+                    </div>
+                    {periodBudget !== null && budgetPeriod.start && budgetPeriod.end && (
+                      <>
+                        <div className="text-sm text-gray-700 mb-1">
+                          Budget max par {splitMode === 'day' ? 'jour' : 'semaine'}&nbsp;: <span className="font-bold text-blue-700">{periodBudget.toFixed(2)} €</span>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Budget valable du {budgetPeriod.start.toLocaleDateString('fr-FR')} au {budgetPeriod.end.toLocaleDateString('fr-FR')} (J-1 avant nouvelle rentrée d'argent)
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()
+        )}
         <hr className="my-2 border-gray-300" />
         {limitAlert && (
           <div className="mt-3 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded shadow text-sm flex items-center gap-2">
