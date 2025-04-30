@@ -73,8 +73,8 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
   // Charger les paiements pour prévision (à partir d'aujourd'hui, sur 1 an)
   useEffect(() => {
     const today = new Date();
-    const todayIso = today.toISOString().slice(0, 10);
-    window.api.getFuturePayments(todayIso).then((p) => setPaymentsPreview(p || []));
+    const localIso = today.toISOString().slice(0, 10);
+    window.api.getFuturePayments(localIso).then((p) => setPaymentsPreview(p || []));
     // Afficher le solde actuel d'aujourd'hui dans la console
   }, [limitDate, balance]);
 
@@ -86,14 +86,11 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayIso = today.toISOString().slice(0, 10);
+    const localIso = today.toLocaleDateString('fr-CA');
     // Calculer la date d'hier
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const yesterdayIso = yesterday.toISOString().slice(0, 10);
-    window.api.getBalanceAt(yesterdayIso).then((soldeInitial) => {
+    window.api.getBalanceAt(localIso).then((soldeInitial) => {
       // Récupérer tous les paiements à venir (jusqu'à 60 jours)
-      window.api.getFuturePayments(todayIso).then((payments) => {
+      window.api.getFuturePayments(localIso).then((payments) => {
         let solde = soldeInitial;
         // Paiements groupés par date
         const byDate = {};
@@ -103,21 +100,33 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         }
         // Générer la liste des 60 prochains jours
         const allDates = [];
-        let d = new Date(todayIso);
+        let d = new Date(localIso);
         for (let i = 0; i < 60; i++) {
           allDates.push(d.toISOString().slice(0, 10));
           d.setDate(d.getDate() + 1);
         }
         let alertDate = null;
-        for (const date of allDates) {
-          if (byDate[date]) solde += byDate[date];
-          if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount)) {
-            alertDate = date;
-            break;
+        // On vérifie si le solde passe sous le montant limite pour la première fois
+        if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount)) {
+          alertDate = localIso;
+        }else {
+          for (const date of allDates) {
+            if (date !== localIso) {
+              // On ne prend pas en compte la date d'aujourd'hui
+              // On additionne le solde d'hier avec les paiements à venir
+              if (byDate[date]) solde += byDate[date];
+              // On vérifie si le solde passe sous le montant limite pour la première fois
+              // On arrête la boucle si on a trouvé une date d'alerte
+              if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount)) {
+                alertDate = date;
+                break;
+              }
+            }
           }
         }
+
         if (alertDate) {
-          if (alertDate === todayIso) {
+          if (alertDate === localIso) {
             setLimitAlert(`Attention, aujourd'hui vous avez atteint ou dépassé la limite de ${limitAmount} €.`);
           } else {
             setLimitAlert(`Attention, le ${new Date(alertDate).toLocaleDateString('fr-FR')} vous atteindrez ou dépasserez la limite de ${limitAmount} €.`);

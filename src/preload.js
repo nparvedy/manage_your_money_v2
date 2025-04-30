@@ -21,4 +21,5 @@ contextBridge.exposeInMainWorld('api', {
   exportPayments: (params) => ipcRenderer.invoke('payments:export', params),
   getSources: () => ipcRenderer.invoke('payment:getSources'),
   getFuturePayments: (fromDate) => ipcRenderer.invoke('payment:future', fromDate),
+  getFirstPaymentDate: () => ipcRenderer.invoke('payment:getFirstDate'),
 });

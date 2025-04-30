@@ -101,6 +101,7 @@ ipcMain.handle('payment:all', (event, limitDate) => {
   }
   const startDate = new Date(startYear, startMonth, 1).toISOString().slice(0, 10);
 
+  // Ajout debug : log des bornes et du résultat SQL
   const payments = db.prepare(
     `SELECT * FROM payment WHERE sampling_date >= ? AND sampling_date <= ? ORDER BY sampling_date DESC`
   ).all(startDate, limitDate);
@@ -250,6 +251,12 @@ ipcMain.handle('payment:deleteByUniqueId', (event, unique_id) => {
 ipcMain.handle('payment:getSources', () => {
   const rows = db.prepare("SELECT DISTINCT source FROM payment WHERE source IS NOT NULL AND source != ''").all();
   return rows.map(r => r.source);
+});
+
+// Gestionnaire pour récupérer la date du premier paiement
+ipcMain.handle('payment:getFirstDate', () => {
+  const row = db.prepare('SELECT sampling_date FROM payment ORDER BY sampling_date ASC LIMIT 1').get();
+  return row ? row.sampling_date : null;
 });
 
 // Téléchargement de la base de données
