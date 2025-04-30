@@ -75,6 +75,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     const today = new Date();
     const todayIso = today.toISOString().slice(0, 10);
     window.api.getFuturePayments(todayIso).then((p) => setPaymentsPreview(p || []));
+    // Afficher le solde actuel d'aujourd'hui dans la console
   }, [limitDate, balance]);
 
   // Calcul du jour où le solde passe sous le montant limite (en partant du solde réel d'aujourd'hui)
@@ -91,39 +92,40 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     yesterday.setDate(today.getDate() - 1);
     const yesterdayIso = yesterday.toISOString().slice(0, 10);
     window.api.getBalanceAt(yesterdayIso).then((soldeInitial) => {
-      // Grouper les paiements par date
-      const byDate = {};
-      for (const p of paymentsPreview) {
-        if (!byDate[p.sampling_date]) byDate[p.sampling_date] = 0;
-        byDate[p.sampling_date] += p.amount;
-      }
-      const allDates = Object.keys(byDate).sort();
-      let solde = soldeInitial;
-      let alertDate = null;
-      // Avancer jusqu'à aujourd'hui pour avoir le solde du jour
-      for (const d of allDates) {
-        if (d > todayIso) break;
-        solde += byDate[d];
-      }
-      // Vérification simple selon la logique corrigée
-      if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde < limitAmount)) {
-        setLimitAlert(`Attention, aujourd'hui vous avez atteint ou dépassé la limite de ${limitAmount} €.`);
-        return;
-      }
-      // Sinon, on cherche la première date future où la condition est vraie
-      let futureSolde = solde;
-      for (const d of allDates.filter(d => d > todayIso)) {
-        futureSolde += byDate[d];
-        if ((limitAmount > 0 && futureSolde <= limitAmount) || (limitAmount < 0 && futureSolde < limitAmount)) {
-          alertDate = d;
-          break;
+      // Récupérer tous les paiements à venir (jusqu'à 60 jours)
+      window.api.getFuturePayments(todayIso).then((payments) => {
+        let solde = soldeInitial;
+        // Paiements groupés par date
+        const byDate = {};
+        for (const p of payments || []) {
+          if (!byDate[p.sampling_date]) byDate[p.sampling_date] = 0;
+          byDate[p.sampling_date] += p.amount;
         }
-      }
-      if (alertDate) {
-        setLimitAlert(`Attention, le ${new Date(alertDate).toLocaleDateString('fr-FR')} vous atteindrez ou dépasserez la limite de ${limitAmount} €.`);
-      } else {
-        setLimitAlert('');
-      }
+        // Générer la liste des 60 prochains jours
+        const allDates = [];
+        let d = new Date(todayIso);
+        for (let i = 0; i < 60; i++) {
+          allDates.push(d.toISOString().slice(0, 10));
+          d.setDate(d.getDate() + 1);
+        }
+        let alertDate = null;
+        for (const date of allDates) {
+          if (byDate[date]) solde += byDate[date];
+          if ((limitAmount > 0 && solde <= limitAmount) || (limitAmount < 0 && solde <= limitAmount)) {
+            alertDate = date;
+            break;
+          }
+        }
+        if (alertDate) {
+          if (alertDate === todayIso) {
+            setLimitAlert(`Attention, aujourd'hui vous avez atteint ou dépassé la limite de ${limitAmount} €.`);
+          } else {
+            setLimitAlert(`Attention, le ${new Date(alertDate).toLocaleDateString('fr-FR')} vous atteindrez ou dépasserez la limite de ${limitAmount} €.`);
+          }
+        } else {
+          setLimitAlert('');
+        }
+      });
     });
   }, [limitAmount, paymentsPreview]);
 
