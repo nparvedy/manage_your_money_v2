@@ -3,6 +3,33 @@ import Sidebar from './components/Sidebar';
 import PaymentsTable from './components/PaymentsTable';
 import Charts from './components/Charts';
 import { FaChartBar } from 'react-icons/fa';
+import { v4 as uuidv4 } from 'uuid';
+
+const API_URL = 'http://localhost:3001'; // À adapter si besoin
+
+const getOrCreateUserId = () => {
+  let userId = localStorage.getItem('userId');
+  if (!userId) {
+    userId = uuidv4();
+    localStorage.setItem('userId', userId);
+  }
+  return userId;
+};
+
+const sendPresence = async (type) => {
+  const userId = getOrCreateUserId();
+  try {
+    const res = await fetch(`${API_URL}/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, timestamp: Date.now() })
+    });
+    const data = await res.json();
+    console.log(`[${type}]`, data);
+  } catch (err) {
+    console.log(`[${type}] Erreur de connexion à l'API`, err);
+  }
+};
 
 const App = () => {
   const [payments, setPayments] = useState([]);
@@ -60,6 +87,23 @@ const App = () => {
       setChartsDateEnd(limitDate);
     }
   }, [limitDate]);
+
+  useEffect(() => {
+    sendPresence('connect');
+    const handleUnload = () => sendPresence('disconnect');
+    window.addEventListener('beforeunload', handleUnload);
+
+    // Ajout : ping toutes les 5 minutes
+    const interval = setInterval(() => {
+      sendPresence('keepalive');
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => {
+      sendPresence('disconnect');
+      window.removeEventListener('beforeunload', handleUnload);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleAddOrUpdatePayment = async (data) => {
     try {
