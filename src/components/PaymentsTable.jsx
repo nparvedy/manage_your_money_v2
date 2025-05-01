@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { FaRegEye, FaRegEyeSlash } from 'react-icons/fa';
 
+// Fonction utilitaire pour formater la date au format français
+function formatDateFR(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  return d.toLocaleDateString('fr-FR');
+}
+
 const PaymentsTable = ({ payments, onEdit, onDelete }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
@@ -99,7 +107,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
         <input type="number" placeholder="Montant max" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32" />
         <input type="date" placeholder="Date début" value={dateStart} onChange={e => setDateStart(e.target.value)} className="p-2 border border-gray-300 rounded" />
         <input type="date" placeholder="Date fin" value={dateEnd} onChange={e => setDateEnd(e.target.value)} className="p-2 border border-gray-300 rounded" />
-        <button onClick={() => { setSearch(''); setMinAmount(''); setMaxAmount(''); setDateStart(''); setDateEnd(''); }} className="p-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700">Réinitialiser</button>
+        <button onClick={() => { setSearch(''); setMinAmount(''); setMaxAmount(''); setDateStart(''); setDateEnd(''); }} className="p-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700 cursor-pointer">Réinitialiser</button>
       </div>
       {months.map((month, idx) => {
         const monthlyPayments = paymentsByMonth[month];
@@ -109,7 +117,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
           <React.Fragment key={month}>
             {idx > 0 && <div style={{height: 32}}></div>}
             <table className="w-full text-base text-left text-gray-700 mb-0 shadow-md rounded-lg">
-              <thead className="text-sm text-white uppercase bg-indigo-500">
+              <thead className="text-sm text-white uppercase" style={{background: 'oklch(37.9% .146 265.522)'}}>
                 <tr>
                   <th scope="col" className="px-6 py-4">Actions</th>
                   <th scope="col" className="px-6 py-4">Source</th>
@@ -135,19 +143,19 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
                 </tr>
                 {monthlyPayments.map(payment => (
                   <tr key={payment.id} className={payment.amount >= 0 ? 'bg-green-50' : 'bg-red-50'}>
-                    <td className="p-2">
+                    <td className="px-6 py-4">
                       <button className="text-blue-500 hover:underline cursor-pointer" onClick={() => handleEditClick(payment.id)}>✏️</button>
                       <button className="text-red-500 hover:underline ml-2 cursor-pointer" onClick={() => handleDeleteClick(payment.id)}>🗑️</button>
                     </td>
-                    <td className="p-2">{payment.source}</td>
-                    <td className="p-2">{payment.amount.toFixed(2)}</td>
-                    <td className="p-2">{payment.sampling_date}</td>
-                    <td className="p-2">{payment.nbr_month}</td>
-                    <td className={`p-2 ${categoryColors[payment.category] || ''}`}>{payment.category || ''}</td>
-                    <td className="p-2 text-center">
+                    <td className="px-6 py-4">{payment.source}</td>
+                    <td className="px-6 py-4">{payment.amount.toFixed(2)}</td>
+                    <td className="px-6 py-4">{formatDateFR(payment.sampling_date)}</td>
+                    <td className="px-6 py-4">{payment.nbr_month}</td>
+                    <td className={`px-6 py-4 ${categoryColors[payment.category] || ''}`}>{payment.category || ''}</td>
+                    <td className="px-6 py-4 text-center align-middle">
                       {payment.attachment ? (
                         <button
-                          className="text-indigo-600 hover:text-indigo-900"
+                          className="text-indigo-600 hover:text-indigo-900 cursor-pointer flex items-center justify-center mx-auto"
                           title="Voir la pièce jointe"
                           onClick={() => {
                             setAttachmentUrl(payment.attachment);
@@ -155,12 +163,13 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
                             setAttachmentName(payment.attachment.split(/[\\/]/).pop());
                             setShowAttachmentModal(true);
                           }}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}
                         >
-                          <FaRegEye className="inline text-xl" />
+                          <FaRegEye className="inline text-xl align-middle" />
                         </button>
                       ) : (
                         <span className="inline-block text-gray-400 relative group">
-                          <FaRegEyeSlash className="inline text-xl" />
+                          <FaRegEyeSlash className="inline text-xl align-middle" />
                           <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-10">
                             Aucune pièce jointe
                           </span>

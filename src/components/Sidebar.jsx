@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiSettings } from 'react-icons/fi';
+import { FaPaperclip } from 'react-icons/fa';
 
 const { ipcRenderer } = window.require ? window.require('electron') : { ipcRenderer: null };
 
@@ -40,7 +40,6 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     batchEnd: '',
   });
 
-  const [showSettings, setShowSettings] = useState(false);
   const [infoModal, setInfoModal] = useState({ show: false, message: '', type: 'success' });
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportDates, setExportDates] = useState({ start: '', end: '' });
@@ -241,7 +240,6 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
 
   const handleExportPayments = () => {
     setShowExportModal(true);
-    setShowSettings(false);
   };
 
   const handleExportSubmit = async (e) => {
@@ -435,18 +433,12 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
   }, [splitMode, splitStartDay, remainingBeforeLimit, limitDate, paymentsPreview]);
 
   return (
-    <div className="w-full md:w-1/4 bg-white shadow-md rounded-lg p-6 relative">
-      {/* Bouton rouage */}
-      <button
-        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl"
-        onClick={() => setShowSettings((v) => !v)}
-        title="Paramètres"
-      >
-        <FiSettings />
-      </button>
+    <div className="w-full md:w-1/4 bg-white shadow-lg rounded-lg p-6 relative">
       {/* Formulaire amélioré EN PREMIER */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Formulaires d'ajout de paiement</h2>
-      <form onSubmit={handleSubmit} className="space-y-3 mb-8">
+      <h2 className="text-2xl font-bold text-blue-900 mb-2 mt-3 flex items-center gap-3 tracking-wide border-b-2 border-blue-200 pb-2  from-blue-100 to-white rounded-t-lg ">
+        <span className="text-3xl">💳</span> Formulaire d'ajout de paiement
+      </h2>
+      <form onSubmit={handleSubmit} className="space-y-3 mb-8 shadow-lg rounded-xl bg-white p-4">
         <div className="flex gap-2">
           <div className="flex-1">
             <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">Source</label>
@@ -503,7 +495,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
               name="sampling_date"
               value={formData.sampling_date}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm cursor-pointer"
               required
             />
           </div>
@@ -541,17 +533,30 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
             </select>
           </div>
           <div className="flex flex-col items-start ml-2">
-            <label htmlFor="attachment" className="block text-sm font-medium text-gray-700 mb-1">Pièce jointe</label>
             <input
               type="file"
               id="attachment"
               name="attachment"
               accept="image/*,application/pdf"
               onChange={handleFileChange}
-              className="block text-sm"
+              className="hidden"
             />
+            {/* Icône trombone toujours visible comme bouton d'ajout/remplacement */}
+            <label htmlFor="attachment" className="text-indigo-600 hover:text-indigo-900 p-0 m-0 align-middle cursor-pointer" title="Ajouter ou remplacer la pièce jointe" style={{ background: 'none', border: 'none' }}>
+              <FaPaperclip className="inline text-2xl align-middle pb-1" />
+            </label>
+            {/* Affichage du nom du fichier si pièce jointe sélectionnée ou existante */}
             {attachmentName && (
-              <span className="text-xs text-gray-500 mt-1">{attachmentName}</span>
+              <span
+                className="text-xs text-gray-500 truncate max-w-[90px] group-hover:underline relative mt-1"
+                style={{ verticalAlign: 'middle' }}
+                title={attachmentName}
+              >
+                {attachmentName}
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-base rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20 font-semibold min-w-[120px] text-center transition-all duration-150">
+                  {attachmentName}
+                </span>
+              </span>
             )}
           </div>
         </div>
@@ -585,47 +590,24 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
           </button>
         )}
       </form>
-      {/* Menu paramètres */}
-      {showSettings && (
-        <div className="absolute top-14 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 flex flex-col space-y-2 min-w-[220px] pr-6 pt-6 ">
-          {/* Croix de fermeture */}
-          <button
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
-            onClick={() => setShowSettings(false)}
-            title="Fermer"
-            tabIndex={0}
-          >
-            ×
-          </button>
-          <button
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition mb-2"
-            onClick={handleDownloadDB}
-          >
-            Télécharger la base de données
-          </button>
-          <button
-            className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition mb-2"
-            onClick={handleUpdateDB}
-          >
-            Mettre à jour la base de données
-          </button>
-          <button
-            className="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition"
-            onClick={handleExportPayments}
-          >
-            Exporter les paiements (PDF)
-          </button>
-        </div>
-      )}
       {/* Solde mis en évidence */}
       <div className="mt-6">
-        <h2 className="text-base font-semibold text-gray-700 flex items-center gap-2 mb-2">
-          <span className="text-xl">💰</span> Solde
-        </h2>
-        <div className={`text-2xl font-semibold px-4 py-2 rounded-lg border ${balance >= 0 ? 'text-green-700 border-green-200 bg-green-50' : 'text-red-700 border-red-200 bg-red-50'} flex items-center justify-center`} style={{letterSpacing: '0.5px', fontFamily: 'inherit'}}>
-          {Number(balance).toFixed(2)} €
+        <div className="flex items-center gap-3 mb-2 justify-between px-4 py-3 rounded-lg shadow-inner bg-white" style={{boxShadow: 'inset 0 2px 12px 0 rgba(0,0,0,0.08)'}}>
+          <div className="flex items-center gap-2">
+            <span className="text-3xl md:text-4xl drop-shadow-sm">💰</span>
+            <span className="text-xl font-bold text-gray-700">Solde</span>
+          </div>
+          <div className="flex items-center gap-0">
+            <span className="h-9 w-px bg-gray-300 mx-3"></span>
+            <div className={`text-3xl md:text-3xl font-extrabold px-6 py-3 rounded-lg  ${balance >= 0 ? 'text-green-700  bg-green-50' : 'text-red-700  bg-red-50'} flex items-center justify-center`} style={{letterSpacing: '0.5px', fontFamily: 'inherit', minWidth: '140px'}}>
+              {Number(balance).toFixed(2)} €
+            </div>
+          </div>
         </div>
       </div>
+      {/* Titre explicatif pour la gestion de la période et du budget */}
+      <hr className="my-4 border-gray-300 mt-6" />
+      <h2 className="font-bold text-blue-800 mb-2 flex items-center gap-2" style={{ fontSize: "22px"}}><span>📅</span> Gestion de la période et du budget</h2>
       <div className="mt-6">
         <div className="flex items-center gap-4 mb-2">
           <span className="text-gray-600 text-sm">Date limite&nbsp;:</span>
@@ -633,7 +615,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
             type="date"
             value={limitDate}
             onChange={(e) => onSetLimit(e.target.value)}
-            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             style={{ minWidth: '140px' }}
           />
           <span className="flex items-center gap-2 ml-auto">
@@ -715,7 +697,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
             );
           })()
         )}
-        <hr className="my-2 border-gray-300" />
+        <hr className="my-4 border-gray-300" />
         {limitAlert && (
           <div className="mt-3 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded shadow text-sm flex items-center gap-2">
             <span role="img" aria-label="alerte">⚠️</span> {limitAlert}

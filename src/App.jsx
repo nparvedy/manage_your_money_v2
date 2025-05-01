@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import PaymentsTable from './components/PaymentsTable';
 import Charts from './components/Charts';
-import { FaChartBar } from 'react-icons/fa';
+import { FaChartBar, FaDatabase } from 'react-icons/fa';
 import { v4 as uuidv4 } from 'uuid';
 
 const API_URL = 'http://localhost:3001'; // À adapter si besoin
@@ -40,6 +40,11 @@ const App = () => {
   const [chartsVisible, setChartsVisible] = useState(false);
   const [chartsDateStart, setChartsDateStart] = useState('');
   const [chartsDateEnd, setChartsDateEnd] = useState('');
+  const [showDbMenu, setShowDbMenu] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportDates, setExportDates] = useState({ start: '', end: '' });
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [infoModal, setInfoModal] = useState({ show: false, message: '', type: 'success' });
 
   const fetchData = async () => {
     const fetchedLimitDate = await window.api.getLimitDate();
@@ -143,6 +148,49 @@ const App = () => {
     }
   };
 
+  const handleDownloadDB = async () => {
+    const result = await window.api.dbDownload();
+    if (result && result.success) {
+      setInfoModal({ show: true, message: 'Base de données téléchargée avec succès !', type: 'success' });
+    } else {
+      setInfoModal({ show: true, message: 'Erreur lors du téléchargement de la base de données.', type: 'error' });
+    }
+    setShowDbMenu(false);
+  };
+
+  const handleUpdateDB = async () => {
+    const result = await window.api.dbUpdate();
+    if (result && result.success) {
+      setInfoModal({ show: true, message: 'Base de données mise à jour avec succès !', type: 'success' });
+      await refreshAll();
+    } else {
+      setInfoModal({ show: true, message: 'Erreur lors de la mise à jour de la base de données.', type: 'error' });
+    }
+    setShowDbMenu(false);
+  };
+
+  const handleExportPayments = () => {
+    setShowExportModal(true);
+    setShowDbMenu(false);
+  };
+
+  const handleExportSubmit = async (e) => {
+    e.preventDefault();
+    const result = await window.api.exportPayments({
+      start: exportDates.start,
+      end: exportDates.end,
+      format: exportFormat
+    });
+    if (result && result.success) {
+      setInfoModal({ show: true, message: `Export ${exportFormat.toUpperCase()} téléchargé avec succès !`, type: 'success' });
+    } else {
+      setInfoModal({ show: true, message: `Erreur lors de l'export ${exportFormat.toUpperCase()}.`, type: 'error' });
+    }
+    setShowExportModal(false);
+  };
+
+  const handleCloseInfoModal = () => setInfoModal({ show: false, message: '', type: 'success' });
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50">
       <Sidebar
@@ -154,24 +202,41 @@ const App = () => {
         editingPayment={editingPayment}
         refreshAll={refreshAll}
       />
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div className="flex-1 p-10 overflow-y-auto">
         <header className="mb-2 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-extrabold text-gray-800">Gestion des Paiements</h1>
             <p className="text-gray-600">Gérez vos paiements et suivez vos finances facilement.</p>
           </div>
           {/* Menu d'icônes */}
-          <div className="flex flex-col items-center gap-2 min-w-[60px]">
+          <div className="flex flex-row items-center gap-4 min-w-[120px]">
             <button
-              className={`flex flex-col items-center group transition-shadow duration-300 p-2 rounded-xl ${showCharts ? 'shadow-inner shadow-indigo-400/60 bg-white' : ''}`}
+              className={`cursor-pointer flex flex-col items-center group transition-shadow duration-300 p-2 rounded-xl ${showCharts ? 'shadow-inner shadow-indigo-400/60 bg-white' : ''}`}
               onClick={() => setShowCharts(v => !v)}
               title="Afficher les graphiques"
               style={{ outline: 'none' }}
             >
-              <FaChartBar className={`text-2xl text-indigo-600 group-hover:text-indigo-800 transition ${showCharts ? 'scale-110' : ''}`} />
-              <span className="text-xs text-gray-500 mt-1">Graphique</span>
+              <FaChartBar className={`text-2xl  group-hover:text-indigo-800 transition ${showCharts ? 'scale-110' : ''}`} style={{color: "oklch(37.9% .146 265.522)"}} />
+              <span className="text-xs text-gray-500 mt-1 cursor-pointer" >Graphique</span>
             </button>
-            {/* D'autres icônes pourront être ajoutées ici */}
+            <div className="relative">
+              <button
+                className={`cursor-pointer flex flex-col items-center group transition-shadow duration-300 p-2 rounded-xl ${showDbMenu ? 'shadow-inner shadow-indigo-400/60 bg-white' : ''}`}
+                onClick={() => setShowDbMenu(v => !v)}
+                title="Base de données et export"
+                style={{ outline: 'none' }}
+              >
+                <FaDatabase className="text-2xl group-hover:text-indigo-800 transition" style={{color: 'oklch(37.9% .146 265.522)'}} />
+                <span className="text-xs text-gray-500 mt-1 cursor-pointer">Base de données</span>
+              </button>
+              {showDbMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 flex flex-col p-2">
+                  <button className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded" onClick={handleDownloadDB}>Télécharger la base</button>
+                  <button className="w-full text-left px-4 py-2 hover:bg-green-50 rounded" onClick={handleUpdateDB}>Mettre à jour la base</button>
+                  <button className="w-full text-left px-4 py-2 hover:bg-purple-50 rounded" onClick={handleExportPayments}>Exporter les paiements</button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
         <div
@@ -202,6 +267,75 @@ const App = () => {
           onDelete={handleDeletePayment}
         />
       </div>
+      {/* Modale export */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
+              onClick={() => setShowExportModal(false)}
+              title="Fermer"
+              tabIndex={0}
+            >
+              ×
+            </button>
+            <h2 className="text-lg font-bold mb-4 text-gray-800">Exporter les paiements</h2>
+            <form onSubmit={handleExportSubmit} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 mb-1">Date de début</label>
+                <input
+                  type="date"
+                  value={exportDates.start}
+                  onChange={e => setExportDates({ ...exportDates, start: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">Date de fin</label>
+                <input
+                  type="date"
+                  value={exportDates.end}
+                  onChange={e => setExportDates({ ...exportDates, end: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">Format</label>
+                <select
+                  value={exportFormat}
+                  onChange={e => setExportFormat(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="pdf">PDF</option>
+                  <option value="csv">CSV</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition"
+              >
+                Exporter
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Modale d'information */}
+      {infoModal.show && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className={`bg-white p-6 rounded-lg shadow-lg w-96 border ${infoModal.type === 'error' ? 'border-red-400' : infoModal.type === 'info' ? 'border-blue-400' : 'border-green-400'}`}>
+            <div className={`mb-4 text-lg font-bold ${infoModal.type === 'error' ? 'text-red-600' : infoModal.type === 'info' ? 'text-blue-600' : 'text-green-600'}`}>{infoModal.message}</div>
+            <button
+              onClick={handleCloseInfoModal}
+              className="w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
