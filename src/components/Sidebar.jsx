@@ -26,7 +26,11 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     months: '',
     pause: false,
     category: '',
+    attachment: null, // Ajout pour la pièce jointe
   });
+
+  // Ajout d'un state pour le nom du fichier sélectionné
+  const [attachmentName, setAttachmentName] = useState('');
 
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [batchData, setBatchData] = useState({
@@ -270,7 +274,9 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         months: editingPayment.nbr_month,
         pause: editingPayment.pause,
         category: editingPayment.category || '',
+        attachment: null, // on ne met pas le fichier ici, mais on garde le chemin pour l'affichage
       });
+      setAttachmentName(editingPayment.attachment ? editingPayment.attachment.split(/[\\/]/).pop() : '');
     }
   }, [editingPayment]);
 
@@ -300,21 +306,41 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     });
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setFormData({ ...formData, attachment: file || null });
+    setAttachmentName(file ? file.name : '');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.sampling_date || isNaN(new Date(formData.sampling_date).getTime())) {
       setInfoModal({ show: true, message: 'Date invalide ou manquante.', type: 'error' });
       return;
     }
+    let attachmentPath = '';
+    if (formData.attachment) {
+      // Nouvelle pièce jointe sélectionnée
+      const result = await window.api.uploadAttachment(formData.attachment);
+      if (result && result.path) {
+        attachmentPath = result.path;
+      }
+    } else if (editingPayment && editingPayment.attachment) {
+      // Pas de nouvelle pièce jointe, on garde l'ancienne
+      attachmentPath = editingPayment.attachment;
+    }
+    const dataToSend = { ...formData, attachment: attachmentPath };
+    console.log('DEBUG PIECE JOINTE:', dataToSend);
     // Afficher la modale d'édition en masse uniquement si on MODIFIE un paiement récurrent
     if (
       editingPayment && editingPayment.unique_id && Number(formData.months) > 1
     ) {
-      setEditMassModal({ show: true, formData: { ...formData } });
+      setEditMassModal({ show: true, formData: { ...dataToSend } });
       return;
     }
-    await onSubmit(formData);
-    setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '' });
+    await onSubmit(dataToSend);
+    setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '', attachment: null });
+    setAttachmentName('');
     document.activeElement.blur();
     setInfoModal({ show: true, message: 'Paiement ajouté ou modifié avec succès.', type: 'success' });
     if (editingPayment) onCancel();
@@ -337,7 +363,8 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       await onSubmit(editMassModal.formData);
     }
     setEditMassModal({ show: false, formData: null });
-    setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '' });
+    setFormData({ id: '', source: '', amount: '', sampling_date: new Date().toISOString().split('T')[0], months: '1', pause: false, category: '', attachment: null });
+    setAttachmentName('');
     setInfoModal({ show: true, message: 'Paiement modifié avec succès.', type: 'success' });
   };
 
@@ -494,23 +521,39 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
             />
           </div>
         </div>
-        <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-          <select
-            id="category"
-            name="category"
-            value={formData.category || ''}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            required
-          >
-            <option value="" disabled>Catégorie</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat} className={categoryColors[cat] || ''}>
-                {categoryIcons[cat] ? `${categoryIcons[cat]} ` : ''}{cat}
-              </option>
-            ))}
-          </select>
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category || ''}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            >
+              <option value="" disabled>Catégorie</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat} className={categoryColors[cat] || ''}>
+                  {categoryIcons[cat] ? `${categoryIcons[cat]} ` : ''}{cat}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col items-start ml-2">
+            <label htmlFor="attachment" className="block text-sm font-medium text-gray-700 mb-1">Pièce jointe</label>
+            <input
+              type="file"
+              id="attachment"
+              name="attachment"
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+              className="block text-sm"
+            />
+            {attachmentName && (
+              <span className="text-xs text-gray-500 mt-1">{attachmentName}</span>
+            )}
+          </div>
         </div>
         <button
           type="submit"
@@ -529,8 +572,10 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
                 sampling_date: new Date().toISOString().split('T')[0],
                 months: '1',
                 pause: false,
-                category: ''
+                category: '',
+                attachment: null,
               });
+              setAttachmentName('');
               onCancel();
               setInfoModal({ show: true, message: 'Modification annulée.', type: 'info' });
             }}

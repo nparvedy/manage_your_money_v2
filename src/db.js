@@ -23,7 +23,8 @@ const initDB = () => {
       sampling_date DATE,
       nbr_month INTEGER,
       pause BOOLEAN,
-      category TEXT
+      category TEXT,
+      attachment TEXT
     )
   `).run();
 
@@ -36,6 +37,11 @@ const initDB = () => {
   // Migration : ajout colonne unique_id si manquante
   if (!pragma.some(col => col.name === 'unique_id')) {
     db.prepare('ALTER TABLE payment ADD COLUMN unique_id TEXT').run();
+  }
+
+  // Migration : ajout colonne attachment si manquante
+  if (!pragma.some(col => col.name === 'attachment')) {
+    db.prepare('ALTER TABLE payment ADD COLUMN attachment TEXT').run();
   }
 
   // Migration : ajout colonne limit_amount si manquante

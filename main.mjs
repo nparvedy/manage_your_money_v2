@@ -140,7 +140,7 @@ ipcMain.handle('money:getBalanceAt', (event, date) => {
 
 // Gestionnaire pour créer un paiement
 ipcMain.handle('payment:create', (event, data) => {
-  const { source, amount, sampling_date, nbr_month, pause, category } = {
+  const { source, amount, sampling_date, nbr_month, pause, category, attachment } = {
     ...data,
     amount: parseFloat(data.amount),
     nbr_month: parseInt(data.months, 10),
@@ -159,14 +159,14 @@ ipcMain.handle('payment:create', (event, data) => {
   }
 
   const insert = db.prepare(
-    'INSERT INTO payment (source, amount, sampling_date, nbr_month, pause, category, unique_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO payment (source, amount, sampling_date, nbr_month, pause, category, unique_id, attachment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
   );
   const ops = [];
   for (let i = 0; i < nbr_month; i++) {
     const date = new Date(sampling_date);
     date.setMonth(date.getMonth() + i);
     const iso = date.toISOString().slice(0, 10);
-    const result = insert.run(source, amount, iso, nbr_month, pause ? 1 : 0, category || '', uniqueId);
+    const result = insert.run(source, amount, iso, nbr_month, pause ? 1 : 0, category || '', uniqueId, attachment || '');
     ops.push(result);
   }
 
@@ -212,8 +212,8 @@ ipcMain.handle('payment:update', (event, data) => {
   // S'assurer que nbr_month est bien mis à jour (converti en nombre)
   const nbrMonth = data.nbr_month !== undefined ? parseInt(data.nbr_month, 10) : (data.months !== undefined ? parseInt(data.months, 10) : 1);
   db.prepare(
-    'UPDATE payment SET source = ?, amount = ?, sampling_date = ?, nbr_month = ?, pause = ?, category = ? WHERE id = ?'
-  ).run(data.source, data.amount, data.sampling_date, nbrMonth, data.pause ? 1 : 0, data.category || '', data.id);
+    'UPDATE payment SET source = ?, amount = ?, sampling_date = ?, nbr_month = ?, pause = ?, category = ?, attachment = ? WHERE id = ?'
+  ).run(data.source, data.amount, data.sampling_date, nbrMonth, data.pause ? 1 : 0, data.category || '', data.attachment || '', data.id);
   const { limit_date } = db.prepare('SELECT limit_date FROM money LIMIT 1').get();
   const balance = db.prepare(
     'SELECT SUM(amount) AS total FROM payment WHERE sampling_date <= ?'
@@ -372,5 +372,23 @@ ipcMain.handle('payments:export', async (event, { start, end, format }) => {
     return { success: true };
   } catch (e) {
     return { success: false };
+  }
+});
+
+// Gestionnaire pour l'upload de pièce jointe
+ipcMain.handle('attachment:upload', async (event, file) => {
+  if (!file || !file.name || !file.buffer) return { path: '' };
+  try {
+    const receiptsDir = path.join(app.getPath('userData'), 'receipts');
+    if (!fs.existsSync(receiptsDir)) fs.mkdirSync(receiptsDir, { recursive: true });
+    const ext = path.extname(file.name);
+    const base = path.basename(file.name, ext);
+    const uniqueName = `${base}_${Date.now()}${ext}`;
+    const destPath = path.join(receiptsDir, uniqueName);
+    // file.buffer est un tableau d'octets (Array), il faut le convertir en Buffer
+    fs.writeFileSync(destPath, Buffer.from(file.buffer));
+    return { path: destPath };
+  } catch (e) {
+    return { path: '' };
   }
 });

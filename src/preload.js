@@ -22,4 +22,20 @@ contextBridge.exposeInMainWorld('api', {
   getSources: () => ipcRenderer.invoke('payment:getSources'),
   getFuturePayments: (fromDate) => ipcRenderer.invoke('payment:future', fromDate),
   getFirstPaymentDate: () => ipcRenderer.invoke('payment:getFirstDate'),
+  uploadAttachment: async (file) => {
+    if (!file) return { path: '' };
+    // Lire le fichier en buffer côté renderer
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const buffer = e.target.result;
+        const result = await ipcRenderer.invoke('attachment:upload', {
+          name: file.name,
+          buffer: Array.from(new Uint8Array(buffer)),
+        });
+        resolve(result);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  },
 });
