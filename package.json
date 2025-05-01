@@ -1,7 +1,7 @@
 {
-  "name": "test",
+  "name": "manage_your_money_v2",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "main": "main.mjs",
   "scripts": {

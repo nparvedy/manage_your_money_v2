@@ -127,7 +127,7 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         }
         const allDates = [];
         let d = new Date(localIso);
-        for (let i = 0; i < 120; i++) { // 120 jours pour couvrir le retour
+        for (let i = 0; i < 60; i++) { // 120 jours pour couvrir le retour
           allDates.push(d.toISOString().slice(0, 10));
           d.setDate(d.getDate() + 1);
         }
@@ -398,7 +398,11 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
           d.setDate(d.getDate() + 7);
         }
         const budget = remainingBeforeLimit / weeks;
-        setPeriodBudget(budget);
+        if (weeks < 1) {
+          setPeriodBudget(0);
+        } else {
+          setPeriodBudget(budget);
+        }
       }
     });
   }, [splitMode, splitStartDay, remainingBeforeLimit, limitDate, paymentsPreview]);
