@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPaperclip } from 'react-icons/fa';
 import AddPaymentForm from './sidebar/AddPaymentForm';
 import SidebarBalance from './sidebar/SidebarBalance';
+import SidebarBudgetPeriod from './sidebar/SidebarBudgetPeriod';
 
 const { ipcRenderer } = window.require ? window.require('electron') : { ipcRenderer: null };
 
@@ -457,105 +458,24 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         setInfoModal={setInfoModal}
       />
       <SidebarBalance balance={balance} />
-      {/* Titre explicatif pour la gestion de la période et du budget */}
-      <hr className="my-4 border-gray-300 mt-6" />
-      <h2 className="font-bold text-blue-800 mb-2 flex items-center gap-2" style={{ fontSize: "22px"}}><span>📅</span> Gestion de la période et du budget</h2>
-      <div className="mt-6">
-        <div className="flex items-center gap-4 mb-2">
-          <span className="text-gray-600 text-sm">Date limite&nbsp;:</span>
-          <input
-            type="date"
-            value={limitDate}
-            onChange={(e) => onSetLimit(e.target.value)}
-            className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-            style={{ minWidth: '140px' }}
-          />
-          <span className="flex items-center gap-2 ml-auto">
-            <span className="text-gray-600 text-sm">Montant limite&nbsp;:</span>
-            <input
-              type="number"
-              step="0.01"
-              value={limitAmountInput}
-              onChange={handleLimitAmountChange}
-              onBlur={handleLimitAmountBlur}
-              className="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
-              style={{ fontSize: '1rem' }}
-            />
-            <span className="text-gray-600">€</span>
-          </span>
-        </div>
-        {/* Affichage du montant restant avant la limite */}
-        {remainingBeforeLimit !== null && (
-          <div className={`mt-2 text-sm font-semibold flex items-center gap-2 ${remainingBeforeLimit > 0 ? 'text-green-700' : 'text-red-700'}`}>
-            <span>Montant restant avant la limite&nbsp;:</span>
-            <span>{remainingBeforeLimit.toFixed(2)} €</span>
-          </div>
-        )}
-        {/* Sélecteur de répartition */}
-        
-        {remainingBeforeLimit !== null && remainingBeforeLimit > 0 && (
-          (() => {
-            // Affichage grisé si aujourd'hui est entre la date de dépassement et la date de retour
-            let showBudgetGrise = false;
-            if (budgetExceededDate && budgetReturnDate) {
-              const today = new Date();
-              today.setHours(0,0,0,0);
-              if (today >= budgetExceededDate && today < budgetReturnDate) {
-                showBudgetGrise = true;
-              }
-            }
-            // On garde aussi le cas où une alerte est présente (pour compatibilité)
-            if (limitAlert && !showBudgetGrise) showBudgetGrise = true;
-            return (
-              <div className={`mt-3 p-3 border-l-4 rounded ${showBudgetGrise ? 'bg-gray-100 border-gray-300 opacity-60 pointer-events-none select-none' : 'bg-blue-50 border-blue-400'}`}>
-                {showBudgetGrise ? (
-                  <div className="text-sm text-gray-500 font-semibold">
-                    Le budget sera disponible seulement à la date où le solde repassera au-dessus du montant limite.<br/>
-                    {budgetReturnDate && (
-                      <span className="block mt-1">Date de retour du budget&nbsp;: <span className="font-bold text-blue-700">{budgetReturnDate.toLocaleDateString('fr-FR')}</span></span>
-                    )}
-                    <span className="text-red-600 font-bold block mt-2">Toute dépense est fortement déconseillée.</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-gray-700 text-sm">Répartir par&nbsp;:</span>
-                      <select value={splitMode} onChange={e => setSplitMode(e.target.value)} className="p-1 border rounded">
-                        <option value="day">Jour</option>
-                        <option value="week">Semaine</option>
-                      </select>
-                      {splitMode === 'week' && (
-                        <>
-                          <span className="ml-2 text-gray-700 text-sm">Début&nbsp;:</span>
-                          <select value={splitStartDay} onChange={e => setSplitStartDay(e.target.value)} className="p-1 border rounded">
-                            {weekDays.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
-                          </select>
-                        </>
-                      )}
-                    </div>
-                    {periodBudget !== null && budgetPeriod.start && budgetPeriod.end && (
-                      <>
-                        <div className="text-sm text-gray-700 mb-1">
-                          Budget max par {splitMode === 'day' ? 'jour' : 'semaine'}&nbsp;: <span className="font-bold text-blue-700">{periodBudget.toFixed(2)} €</span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Budget valable du {budgetPeriod.start.toLocaleDateString('fr-FR')} au {budgetPeriod.end.toLocaleDateString('fr-FR')} (J-1 avant nouvelle rentrée d'argent)
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })()
-        )}
-        <hr className="my-4 border-gray-300" />
-        {limitAlert && (
-          <div className="mt-3 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded shadow text-sm flex items-center gap-2">
-            <span role="img" aria-label="alerte">⚠️</span> {limitAlert}
-          </div>
-        )}
-      </div>
+      <SidebarBudgetPeriod
+        limitDate={limitDate}
+        onSetLimit={onSetLimit}
+        limitAmountInput={limitAmountInput}
+        handleLimitAmountChange={handleLimitAmountChange}
+        handleLimitAmountBlur={handleLimitAmountBlur}
+        remainingBeforeLimit={remainingBeforeLimit}
+        budgetExceededDate={budgetExceededDate}
+        budgetReturnDate={budgetReturnDate}
+        limitAlert={limitAlert}
+        splitMode={splitMode}
+        setSplitMode={setSplitMode}
+        splitStartDay={splitStartDay}
+        setSplitStartDay={setSplitStartDay}
+        weekDays={weekDays}
+        periodBudget={periodBudget}
+        budgetPeriod={budgetPeriod}
+      />
 
       {/* Modale édition en masse */}
       {editMassModal.show && (
