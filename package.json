@@ -1,5 +1,5 @@
 {
-  "name": "test",
+  "name": "manage_your_money_v2",
   "private": true,
   "version": "1.0.4",
   "type": "module",
@@ -13,10 +13,10 @@
     "build:win": "electron-builder --windows"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.1.4",
     "@vitejs/plugin-react": "^4.4.1",
     "better-sqlite3": "^11.9.1",
     "chart.js": "^4.4.9",
+    "daisyui": "^5.0.35",
     "json2csv": "^6.0.0-alpha.2",
     "pdfkit": "^0.17.0",
     "react": "^19.0.0",
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
+    "@tailwindcss/postcss": "^4.1.5",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
     "electron": "^35.2.1",
@@ -36,6 +37,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "postcss": "^8.5.3",
+    "postcss-cli": "^11.0.1",
     "tailwindcss": "^4.1.5",
     "vite": "^6.3.1"
   },

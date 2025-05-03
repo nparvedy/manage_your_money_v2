@@ -112,7 +112,7 @@ export default function AddPaymentForm(props) {
               onChange={props.handleFileChange}
               className="hidden"
             />
-            <label htmlFor="attachment" className="text-indigo-600 hover:text-indigo-900 p-0 m-0 align-middle cursor-pointer" title="Ajouter ou remplacer la pièce jointe" style={{ background: 'none', border: 'none' }}>
+            <label htmlFor="attachment" className="text-indigo-900 hover:text-indigo-900 p-0 m-0 align-middle cursor-pointer" title="Ajouter ou remplacer la pièce jointe" style={{ background: 'none', border: 'none' }}>
               <FaPaperclip className="inline text-2xl align-middle pb-1" />
             </label>
             {props.attachmentName && (
@@ -131,7 +131,7 @@ export default function AddPaymentForm(props) {
         </div>
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 text-base"
+          className="w-full bg-blue-900 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 text-base cursor-pointer"
         >
           Enregistrer
         </button>

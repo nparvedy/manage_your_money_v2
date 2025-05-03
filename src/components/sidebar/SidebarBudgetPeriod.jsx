@@ -13,7 +13,7 @@ export default function SidebarBudgetPeriod(props) {
               type="date"
               value={props.limitDate}
               onChange={(e) => props.onSetLimit(e.target.value)}
-              className="input input-bordered input-sm w-36 max-w-xs  bg-blue-50 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-blue-900 px-3 py-2"
+              className="input input-bordered input-base w-36 max-w-xs  bg-blue-50 focus:border-blue-900 focus:ring-2 focus:ring-blue-200 text-blue-900 px-3 py-2"
             />
             <span className="flex items-center gap-2 ml-auto">
               <span className="text-blue-800 text-sm font-semibold">Montant limite&nbsp;:</span>
@@ -23,7 +23,7 @@ export default function SidebarBudgetPeriod(props) {
                 value={props.limitAmountInput}
                 onChange={props.handleLimitAmountChange}
                 onBlur={props.handleLimitAmountBlur}
-                className="input input-bordered input-sm w-24 text-right bg-blue-50 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-blue-900 px-3 py-2"
+                className="input input-bordered input-base w-24 text-right bg-blue-50 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-blue-900 px-3 py-2"
               />
               <span className="text-gray-600">€</span>
             </span>
@@ -42,14 +42,14 @@ export default function SidebarBudgetPeriod(props) {
             <div className="bg-blue-50 border-l-4 border-blue-400 rounded p-3">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-gray-700 text-sm">Répartir par&nbsp;:</span>
-                <select value={props.splitMode} onChange={e => props.setSplitMode(e.target.value)} className="select select-bordered select-xs">
+                <select value={props.splitMode} onChange={e => props.setSplitMode(e.target.value)} className="select select-bordered select-base">
                   <option value="day">Jour</option>
                   <option value="week">Semaine</option>
                 </select>
                 {props.splitMode === 'week' && (
                   <>
                     <span className="ml-2 text-gray-700 text-sm">Début&nbsp;:</span>
-                    <select value={props.splitStartDay} onChange={e => props.setSplitStartDay(e.target.value)} className="select select-bordered select-xs">
+                    <select value={props.splitStartDay} onChange={e => props.setSplitStartDay(e.target.value)} className="select select-bordered select-base">
                       {props.weekDays.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
                     </select>
                   </>

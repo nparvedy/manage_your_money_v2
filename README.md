@@ -6,7 +6,7 @@ README généré automatiquement le 27 avril 2025
 
 **Gérez vos paiements, suivez votre solde, et gardez le contrôle sur vos finances personnelles, simplement et efficacement !**
 
-téléchargement : https://www.dropbox.com/scl/fi/9my5lajs0f6synwhekd4s/ManageYourMoney-Setup-1.0.2.exe?rlkey=pbzzwkfqppsi6saoi0s2grm74&st=gjn3fmpa&dl=0
+téléchargement : https://www.dropbox.com/scl/fi/8wkxyx9ujx9zzguryibh1/ManageYourMoney-Setup-1.0.4.exe?rlkey=yaf7l4kusvjuvprqz3lo98dp4&st=nwz4wn9k&dl=0
 ---
 
 ## 🚀 Présentation

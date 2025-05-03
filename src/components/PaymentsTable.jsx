@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaRegEye, FaRegEyeSlash } from 'react-icons/fa';
+import { FaRegEye, FaRegEyeSlash, FaPen, FaTrash } from 'react-icons/fa';
 
 // Fonction utilitaire pour formater la date au format français
 function formatDateFR(dateStr) {
@@ -34,6 +34,33 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
     'Divers': 'text-gray-700',
     'Salaires': 'text-emerald-700',
     'Crédit': 'text-cyan-700',
+  };
+
+  // Palette d'icônes pour chaque catégorie
+  const categoryIcons = {
+    'Loyer': '🏠',
+    'Alimentation': '🛒',
+    'Loisirs': '🎉',
+    'Transports': '🚗',
+    'Santé': '💊',
+    'Abonnements': '📺',
+    'Impôts': '💸',
+    'Divers': '🧩',
+    'Salaires': '💼',
+    'Crédit': '🏦',
+  };
+  // Couleurs de fond pour chaque catégorie
+  const categoryBgColors = {
+    'Loyer': 'bg-purple-500',
+    'Alimentation': 'bg-green-500',
+    'Loisirs': 'bg-pink-500',
+    'Transports': 'bg-yellow-500',
+    'Santé': 'bg-red-500',
+    'Abonnements': 'bg-blue-500',
+    'Impôts': 'bg-orange-500',
+    'Divers': 'bg-gray-500',
+    'Salaires': 'bg-emerald-500',
+    'Crédit': 'bg-cyan-500',
   };
 
   // Filtrage
@@ -102,11 +129,11 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
     <div className="relative overflow-x-auto z-10">
       {/* Filtres avancés */}
       <div className="flex flex-wrap gap-2 p-4 bg-gray-100 rounded-t-lg border-b border-gray-300">
-        <input type="text" placeholder="Rechercher par source..." value={search} onChange={e => setSearch(e.target.value)} className="p-2 border border-gray-300 rounded" />
-        <input type="number" placeholder="Montant min" value={minAmount} onChange={e => setMinAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32" />
-        <input type="number" placeholder="Montant max" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32" />
-        <input type="date" placeholder="Date début" value={dateStart} onChange={e => setDateStart(e.target.value)} className="p-2 border border-gray-300 rounded" />
-        <input type="date" placeholder="Date fin" value={dateEnd} onChange={e => setDateEnd(e.target.value)} className="p-2 border border-gray-300 rounded" />
+        <input type="text" placeholder="Rechercher par source..." value={search} onChange={e => setSearch(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
+        <input type="number" placeholder="Montant min" value={minAmount} onChange={e => setMinAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32 bg-white" />
+        <input type="number" placeholder="Montant max" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32 bg-white" />
+        <input type="date" placeholder="Date début" value={dateStart} onChange={e => setDateStart(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
+        <input type="date" placeholder="Date fin" value={dateEnd} onChange={e => setDateEnd(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
         <button onClick={() => { setSearch(''); setMinAmount(''); setMaxAmount(''); setDateStart(''); setDateEnd(''); }} className="p-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700 cursor-pointer">Réinitialiser</button>
       </div>
       {months.map((month, idx) => {
@@ -143,19 +170,35 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
                 </tr>
                 {monthlyPayments.map(payment => (
                   <tr key={payment.id} className={payment.amount >= 0 ? 'bg-green-50' : 'bg-red-50'}>
-                    <td className="px-6 py-4">
-                      <button className="text-blue-500 hover:underline cursor-pointer" onClick={() => handleEditClick(payment.id)}>✏️</button>
-                      <button className="text-red-500 hover:underline ml-2 cursor-pointer" onClick={() => handleDeleteClick(payment.id)}>🗑️</button>
+                    <td className="px-3 py-2">
+                      <button className="text-blue-500 hover:text-blue-900 cursor-pointer" onClick={() => handleEditClick(payment.id)} title="Modifier">
+                        <FaPen className="inline text-lg align-middle" />
+                      </button>
+                      <button className="text-red-500 hover:text-red-400 ml-4 cursor-pointer" onClick={() => handleDeleteClick(payment.id)} title="Supprimer">
+                        <FaTrash className="inline text-lg align-middle" />
+                      </button>
                     </td>
-                    <td className="px-6 py-4">{payment.source}</td>
-                    <td className="px-6 py-4">{payment.amount.toFixed(2)}</td>
-                    <td className="px-6 py-4">{formatDateFR(payment.sampling_date)}</td>
-                    <td className="px-6 py-4">{payment.nbr_month}</td>
-                    <td className={`px-6 py-4 ${categoryColors[payment.category] || ''}`}>{payment.category || ''}</td>
-                    <td className="px-6 py-4 text-center align-middle">
+                    <td className="px-3 py-2">{payment.source}</td>
+                    <td className="px-3 py-2">{payment.amount.toFixed(2)}</td>
+                    <td className="px-3 py-2">{formatDateFR(payment.sampling_date)}</td>
+                    <td className="px-3 py-2">{payment.nbr_month}</td>
+                    <td className={`px-3 py-2`}>
+                      {payment.category ? (
+                        <span
+                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border font-semibold text-white text-base shadow-sm ${categoryBgColors[payment.category] || 'bg-gray-500'} border-white`}
+                          style={{ minWidth: 90, justifyContent: 'center' }}
+                        >
+                          <span className="inline-flex items-center justify-center rounded-full bg-white" style={{ width: 28, height: 28 }}>
+                            <span className="text-lg" style={{ color: 'black' }}>{categoryIcons[payment.category] || ''}</span>
+                          </span>
+                          <span>{payment.category}</span>
+                        </span>
+                      ) : ''}
+                    </td>
+                    <td className="px-3 py-2 text-center align-middle">
                       {payment.attachment ? (
                         <button
-                          className="text-indigo-600 hover:text-indigo-900 cursor-pointer flex items-center justify-center mx-auto"
+                          className="text-indigo-900 hover:text-indigo-600 cursor-pointer flex items-center justify-center mx-auto"
                           title="Voir la pièce jointe"
                           onClick={() => {
                             setAttachmentUrl(payment.attachment);
