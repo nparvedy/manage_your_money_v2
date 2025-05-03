@@ -11,7 +11,7 @@ export default function AddPaymentForm(props) {
       </h2>
       <form onSubmit={props.handleSubmit} className="space-y-3 mb-8 shadow-lg rounded-xl bg-white p-4">
         <div className="flex gap-2">
-          <div className="flex-1">
+          <div className="flex-[1.1] min-w-0">
             <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">Source</label>
             <div className="relative">
               <input
@@ -26,6 +26,7 @@ export default function AddPaymentForm(props) {
                 className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 autoComplete="off"
                 required
+                style={{ fontSize: '0.95rem', padding: '0.45rem 0.5rem' }}
               />
               {props.showSuggestions && (
                 <ul className="absolute left-0 right-0 bg-white border border-gray-300 rounded-lg shadow z-20 max-h-40 overflow-y-auto mt-1">
@@ -42,19 +43,43 @@ export default function AddPaymentForm(props) {
               )}
             </div>
           </div>
-          <div className="w-32">
+          <div className="flex-[0.9] min-w-0">
             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">Montant</label>
-            <input
-              type="number"
-              id="amount"
-              name="amount"
-              placeholder="Montant"
-              value={props.formData.amount}
-              onChange={props.handleChange}
-              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              step="0.01"
-              required
-            />
+            <div className="flex items-center gap-1">
+              {/* Boutons + et - pour le signe */}
+              <button
+                type="button"
+                onClick={() => props.setAmountSign(1)}
+                className={`px-1.5 py-0.5 rounded-full border-2 text-base font-bold focus:outline-none transition-colors ${props.amountSign === 1 ? 'bg-green-100 border-green-600 text-green-700' : 'bg-white border-gray-300 text-gray-400 hover:bg-green-50'}`}
+                tabIndex={-1}
+                title="Entrée (positif)"
+                style={{ minWidth: 28, minHeight: 28, lineHeight: '1.1' }}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={() => props.setAmountSign(-1)}
+                className={`px-1.5 py-0.5 rounded-full border-2 text-base font-bold focus:outline-none transition-colors ${props.amountSign === -1 ? 'bg-red-100 border-red-600 text-red-700' : 'bg-white border-gray-300 text-gray-400 hover:bg-red-50'}`}
+                tabIndex={-1}
+                title="Sortie (négatif)"
+                style={{ minWidth: 28, minHeight: 28, lineHeight: '1.1' }}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                id="amount"
+                name="amount"
+                placeholder="Montant"
+                value={props.formData.amount}
+                onChange={props.handleChange}
+                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ml-2"
+                step="0.01"
+                required
+                min="0"
+              />
+            </div>
           </div>
         </div>
         <div className="flex gap-2">

@@ -32,6 +32,9 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
     attachment: null, // Ajout pour la pièce jointe
   });
 
+  // Ajout d'un état pour le signe du montant (+1 ou -1)
+  const [amountSign, setAmountSign] = useState(1);
+
   // Ajout d'un state pour le nom du fichier sélectionné
   const [attachmentName, setAttachmentName] = useState('');
 
@@ -215,13 +218,14 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       setFormData({
         id: editingPayment.id,
         source: editingPayment.source,
-        amount: editingPayment.amount,
+        amount: Math.abs(editingPayment.amount),
         sampling_date: editingPayment.sampling_date,
         months: editingPayment.nbr_month,
         pause: editingPayment.pause,
         category: editingPayment.category || '',
         attachment: null, // on ne met pas le fichier ici, mais on garde le chemin pour l'affichage
       });
+      setAmountSign(editingPayment.amount >= 0 ? 1 : -1);
       setAttachmentName(editingPayment.attachment ? editingPayment.attachment.split(/[\\/]/).pop() : '');
     }
   }, [editingPayment]);
@@ -232,16 +236,26 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         ...prevFormData,
         sampling_date: new Date().toISOString().split('T')[0],
         months: '1',
+        amount: '',
       }));
+      setAmountSign(1);
     }
   }, [editingPayment]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
+    if (name === 'amount') {
+      // Toujours stocker la valeur absolue dans le champ
+      setFormData({
+        ...formData,
+        [name]: value.replace('-', ''),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === 'checkbox' ? checked : value,
+      });
+    }
   };
 
   const handleBatchChange = (e) => {
@@ -275,7 +289,8 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
       // Pas de nouvelle pièce jointe, on garde l'ancienne
       attachmentPath = editingPayment.attachment;
     }
-    const dataToSend = { ...formData, attachment: attachmentPath };
+    // Appliquer le signe choisi au montant
+    const dataToSend = { ...formData, amount: formData.amount ? amountSign * Math.abs(parseFloat(formData.amount)) : '', attachment: attachmentPath };
     console.log('DEBUG PIECE JOINTE:', dataToSend);
     // Afficher la modale d'édition en masse uniquement si on MODIFIE un paiement récurrent
     if (
@@ -345,6 +360,8 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         editingPayment={editingPayment}
         onCancel={onCancel}
         setInfoModal={setInfoModal}
+        amountSign={amountSign}
+        setAmountSign={setAmountSign}
       />
       <SidebarBalance balance={balance} />
       <SidebarBudgetPeriod
