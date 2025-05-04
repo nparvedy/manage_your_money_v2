@@ -1,24 +1,26 @@
 import React from 'react';
 import { FaPaperclip } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 export default function AddPaymentForm(props) {
-  // On récupère toutes les props du parent Sidebar
+  const { t } = useTranslation();
+
   return (
     <>
       {/* Formulaire amélioré EN PREMIER */}
       <h2 className="text-2xl font-bold text-blue-900 mb-2 mt-3 flex items-center gap-3 tracking-wide border-b-2 border-blue-200 pb-2  from-blue-100 to-white rounded-t-lg ">
-        <span className="text-3xl">💳</span> Formulaire d'ajout de paiement
+        <span className="text-3xl">💳</span> {t('form.add_payment_title')}
       </h2>
       <form onSubmit={props.handleSubmit} className="space-y-3 mb-8 shadow-lg rounded-xl bg-white p-4">
         <div className="flex gap-2">
           <div className="flex-[1.1] min-w-0">
-            <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+            <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">{t('form.source')}</label>
             <div className="relative">
               <input
                 type="text"
                 id="source"
                 name="source"
-                placeholder="Source"
+                placeholder={t('form.source')}
                 value={props.formData.source}
                 onChange={props.handleChange}
                 onFocus={() => props.setShowSuggestions(props.suggestions.length > 0)}
@@ -44,7 +46,7 @@ export default function AddPaymentForm(props) {
             </div>
           </div>
           <div className="flex-[0.9] min-w-0">
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">Montant</label>
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">{t('form.amount')}</label>
             <div className="flex items-center gap-1">
               {/* Boutons + et - pour le signe */}
               <button
@@ -52,7 +54,7 @@ export default function AddPaymentForm(props) {
                 onClick={() => props.setAmountSign(1)}
                 className={`px-1.5 py-0.5 rounded-full border-2 text-base font-bold focus:outline-none transition-colors ${props.amountSign === 1 ? 'bg-green-100 border-green-600 text-green-700' : 'bg-white border-gray-300 text-gray-400 hover:bg-green-50'}`}
                 tabIndex={-1}
-                title="Entrée (positif)"
+                title={t('form.positive')}
                 style={{ minWidth: 28, minHeight: 28, lineHeight: '1.1' }}
               >
                 +
@@ -62,7 +64,7 @@ export default function AddPaymentForm(props) {
                 onClick={() => props.setAmountSign(-1)}
                 className={`px-1.5 py-0.5 rounded-full border-2 text-base font-bold focus:outline-none transition-colors ${props.amountSign === -1 ? 'bg-red-100 border-red-600 text-red-700' : 'bg-white border-gray-300 text-gray-400 hover:bg-red-50'}`}
                 tabIndex={-1}
-                title="Sortie (négatif)"
+                title={t('form.negative')}
                 style={{ minWidth: 28, minHeight: 28, lineHeight: '1.1' }}
               >
                 -
@@ -71,7 +73,7 @@ export default function AddPaymentForm(props) {
                 type="number"
                 id="amount"
                 name="amount"
-                placeholder="Montant"
+                placeholder={t('form.amount')}
                 value={props.formData.amount}
                 onChange={props.handleChange}
                 className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ml-2"
@@ -84,7 +86,7 @@ export default function AddPaymentForm(props) {
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <label htmlFor="sampling_date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label htmlFor="sampling_date" className="block text-sm font-medium text-gray-700 mb-1">{t('form.date')}</label>
             <input
               type="date"
               id="sampling_date"
@@ -96,12 +98,12 @@ export default function AddPaymentForm(props) {
             />
           </div>
           <div className="w-32">
-            <label htmlFor="months" className="block text-sm font-medium text-gray-700 mb-1">Mois répé.</label>
+            <label htmlFor="months" className="block text-sm font-medium text-gray-700 mb-1">{t('form.months')}</label>
             <input
               type="number"
               id="months"
               name="months"
-              placeholder="Mois"
+              placeholder={t('form.months')}
               value={props.formData.months}
               onChange={props.handleChange}
               className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -111,7 +113,7 @@ export default function AddPaymentForm(props) {
         </div>
         <div className="flex gap-2 items-end">
           <div className="flex-1">
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">{t('form.category')}</label>
             <select
               id="category"
               name="category"
@@ -120,10 +122,10 @@ export default function AddPaymentForm(props) {
               className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               required
             >
-              <option value="" disabled>Catégorie</option>
+              <option value="" disabled>{t('form.category')}</option>
               {props.categories.map(cat => (
                 <option key={cat} value={cat} className={props.categoryColors[cat] || ''}>
-                  {props.categoryIcons[cat] ? `${props.categoryIcons[cat]} ` : ''}{cat}
+                  {props.categoryIcons[cat] ? `${props.categoryIcons[cat]} ` : ''}{t(`categories.${cat}`)}
                 </option>
               ))}
             </select>
@@ -137,7 +139,7 @@ export default function AddPaymentForm(props) {
               onChange={props.handleFileChange}
               className="hidden"
             />
-            <label htmlFor="attachment" className="text-indigo-900 hover:text-indigo-900 p-0 m-0 align-middle cursor-pointer" title="Ajouter ou remplacer la pièce jointe" style={{ background: 'none', border: 'none' }}>
+            <label htmlFor="attachment" className="text-indigo-900 hover:text-indigo-900 p-0 m-0 align-middle cursor-pointer" title={t('form.attachment')} style={{ background: 'none', border: 'none' }}>
               <FaPaperclip className="inline text-2xl align-middle pb-1" />
             </label>
             {props.attachmentName && (
@@ -158,7 +160,7 @@ export default function AddPaymentForm(props) {
           type="submit"
           className="w-full bg-blue-900 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 text-base cursor-pointer"
         >
-          Enregistrer
+          {t('form.save')}
         </button>
         {props.editingPayment && (
           <button
@@ -176,11 +178,11 @@ export default function AddPaymentForm(props) {
               });
               props.setAttachmentName('');
               props.onCancel();
-              props.setInfoModal({ show: true, message: 'Modification annulée.', type: 'info' });
+              props.setInfoModal({ show: true, message: t('form.cancelled'), type: 'info' });
             }}
             className="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition duration-300 text-base"
           >
-            Annuler
+            {t('form.cancel')}
           </button>
         )}
       </form>

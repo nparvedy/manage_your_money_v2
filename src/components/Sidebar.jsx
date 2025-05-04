@@ -386,30 +386,29 @@ const Sidebar = ({ onSubmit, onCancel, onSetLimit, balance, limitDate, editingPa
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-2xl shadow-2xl w-[420px] max-w-full relative animate-fade-in">
             <h2 className="text-2xl font-extrabold mb-6 text-indigo-700 flex items-center gap-2">
-              <span>📝</span> Modification d’un paiement récurrent
+              <span>📝</span> {window.api.t('modal.mass_edit_title')}
             </h2>
             <p className="mb-8 text-gray-700 text-lg text-center">
-              Ce paiement fait partie d’une série <span className="font-bold text-indigo-600">({formData.months} mois)</span>.<br />
-              Voulez-vous modifier&nbsp;:
+              {window.api.t('modal.mass_action_text', { months: formData.months, action: window.api.t('modal.edit') })}
             </p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => handleEditMassChoice(false)}
                 className="flex items-center gap-2 px-5 py-3 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-base font-semibold shadow"
               >
-                <span className="text-xl">✏️</span> Modifier <span className="font-bold ml-1">seulement ce paiement</span>
+                <span className="text-xl">✏️</span> {window.api.t('modal.edit_single')}
               </button>
               <button
                 onClick={() => handleEditMassChoice(true)}
                 className="flex items-center gap-2 px-5 py-3 w-full bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-base font-semibold shadow"
               >
-                <span className="text-xl">🔄</span> Modifier <span className="font-bold ml-1">tous les paiements liés</span>
+                <span className="text-xl">🔄</span> {window.api.t('modal.edit_all')}
               </button>
               <button
                 onClick={() => setEditMassModal({ show: false, formData: null })}
                 className="flex items-center gap-2 px-5 py-3 w-full bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition text-base font-semibold shadow mt-2"
               >
-                <span className="text-xl">❌</span> Annuler
+                <span className="text-xl">❌</span> {window.api.t('modal.cancel')}
               </button>
             </div>
           </div>

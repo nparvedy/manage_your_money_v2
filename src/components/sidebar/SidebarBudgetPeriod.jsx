@@ -1,14 +1,16 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function SidebarBudgetPeriod(props) {
-  // Toutes les props nécessaires sont passées depuis Sidebar
+  const { t } = useTranslation();
+
   return (
     <div className="card bg-base-100 shadow-md mt-6">
       <div className="card-body p-5">
-        <h2 className="card-title text-blue-800 text-xl mb-4 flex items-center gap-2"><span>📅</span> Gestion de la période et du budget</h2>
+        <h2 className="card-title text-blue-800 text-xl mb-4 flex items-center gap-2"><span>📅</span> {t('sidebar.budget_period_title')}</h2>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <span className="text-blue-800 text-sm font-semibold">Date limite&nbsp;:</span>
+            <span className="text-blue-800 text-sm font-semibold">{t('sidebar.limit_date')}</span>
             <input
               type="date"
               value={props.limitDate}
@@ -16,7 +18,7 @@ export default function SidebarBudgetPeriod(props) {
               className="input input-bordered input-base w-36 max-w-xs  bg-blue-50 focus:border-blue-900 focus:ring-2 focus:ring-blue-200 text-blue-900 px-3 py-2"
             />
             <span className="flex items-center gap-2 ml-auto">
-              <span className="text-blue-800 text-sm font-semibold">Montant limite&nbsp;:</span>
+              <span className="text-blue-800 text-sm font-semibold">{t('sidebar.limit_amount')}</span>
               <input
                 type="number"
                 step="0.01"
@@ -29,33 +31,30 @@ export default function SidebarBudgetPeriod(props) {
             </span>
           </div>
 
-          {/* Affichage du montant restant avant la limite */}
           {props.remainingBeforeLimit !== null && (
             <div className={`alert ${props.remainingBeforeLimit > 0 ? 'alert-success' : 'alert-error'} py-2 px-3 flex items-center gap-2 text-sm font-semibold`}>
-              <span>Montant restant avant la limite&nbsp;:</span>
+              <span>{t('sidebar.remaining_before_limit')}</span>
               <span>{props.remainingBeforeLimit.toFixed(2)} €</span>
             </div>
           )}
 
-          {/* Sélecteur de répartition et calcul du budget max par jour/semaine */}
           {props.remainingBeforeLimit !== null && props.remainingBeforeLimit > 0 && (
             <div className="bg-blue-50 border-l-4 border-blue-400 rounded p-3">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-gray-700 text-sm">Répartir par&nbsp;:</span>
+                <span className="text-gray-700 text-sm">{t('sidebar.split_by')}</span>
                 <select value={props.splitMode} onChange={e => props.setSplitMode(e.target.value)} className="select select-bordered select-base">
-                  <option value="day">Jour</option>
-                  <option value="week">Semaine</option>
+                  <option value="day">{t('sidebar.day')}</option>
+                  <option value="week">{t('sidebar.week')}</option>
                 </select>
                 {props.splitMode === 'week' && (
                   <>
-                    <span className="ml-2 text-gray-700 text-sm">Début&nbsp;:</span>
+                    <span className="ml-2 text-gray-700 text-sm">{t('sidebar.start')}:</span>
                     <select value={props.splitStartDay} onChange={e => props.setSplitStartDay(e.target.value)} className="select select-bordered select-base">
-                      {props.weekDays.map(d => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
+                      {props.weekDays.map(d => <option key={d} value={d}>{t(`sidebar.weekdays.${d}`)}</option>)}
                     </select>
                   </>
                 )}
               </div>
-              {/* Calcul du budget max par jour/semaine */}
               {(() => {
                 if (!props.limitDate || props.remainingBeforeLimit == null) return null;
                 const today = new Date();
@@ -66,17 +65,14 @@ export default function SidebarBudgetPeriod(props) {
                 if (props.splitMode === 'day') {
                   nbUnits = Math.max(1, Math.round((limitDate - today) / (1000*60*60*24)));
                 } else if (props.splitMode === 'week') {
-                  // Trouver le prochain jour de la semaine sélectionné
                   const weekDays = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
                   const startDayIndex = weekDays.indexOf(props.splitStartDay);
                   let firstTarget = new Date(today);
                   let daysToAdd = (startDayIndex - today.getDay() + 7) % 7;
                   if (daysToAdd === 0) {
-                    // Si aujourd'hui est déjà le bon jour, on commence cette semaine
                   } else {
                     firstTarget.setDate(today.getDate() + daysToAdd);
                   }
-                  // Compter le nombre d'occurrences du jour choisi jusqu'à la date limite
                   let count = 0;
                   let d = new Date(firstTarget);
                   while (d <= limitDate) {
@@ -88,7 +84,7 @@ export default function SidebarBudgetPeriod(props) {
                 const budgetMax = props.remainingBeforeLimit / nbUnits;
                 return (
                   <div className="text-sm text-blue-700 mb-1">
-                    Budget max par {props.splitMode === 'day' ? 'jour' : 'semaine'}&nbsp;: <span className="font-bold">{budgetMax.toFixed(2)} €</span>
+                    {t('sidebar.max_budget_per', { mode: t('sidebar.' + props.splitMode) })} <span className="font-bold">{budgetMax.toFixed(2)} €</span>
                   </div>
                 );
               })()}

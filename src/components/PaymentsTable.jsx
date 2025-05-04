@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaRegEye, FaRegEyeSlash, FaPen, FaTrash } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 // Fonction utilitaire pour formater la date au format français
 function formatDateFR(dateStr) {
@@ -10,6 +11,7 @@ function formatDateFR(dateStr) {
 }
 
 const PaymentsTable = ({ payments, onEdit, onDelete }) => {
+  const { t } = useTranslation();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
   const [massActionModal, setMassActionModal] = useState({ show: false, payment: null, action: null });
@@ -129,12 +131,12 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
     <div className="relative overflow-x-auto z-10">
       {/* Filtres avancés */}
       <div className="flex flex-wrap gap-2 p-4 bg-gray-100 rounded-t-lg border-b border-gray-300">
-        <input type="text" placeholder="Rechercher par source..." value={search} onChange={e => setSearch(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
-        <input type="number" placeholder="Montant min" value={minAmount} onChange={e => setMinAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32 bg-white" />
-        <input type="number" placeholder="Montant max" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32 bg-white" />
-        <input type="date" placeholder="Date début" value={dateStart} onChange={e => setDateStart(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
-        <input type="date" placeholder="Date fin" value={dateEnd} onChange={e => setDateEnd(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
-        <button onClick={() => { setSearch(''); setMinAmount(''); setMaxAmount(''); setDateStart(''); setDateEnd(''); }} className="p-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700 cursor-pointer">Réinitialiser</button>
+        <input type="text" placeholder={t('table.search_source')} value={search} onChange={e => setSearch(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
+        <input type="number" placeholder={t('table.min_amount')} value={minAmount} onChange={e => setMinAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32 bg-white" />
+        <input type="number" placeholder={t('table.max_amount')} value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="p-2 border border-gray-300 rounded w-32 bg-white" />
+        <input type="date" placeholder={t('table.date_start')} value={dateStart} onChange={e => setDateStart(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
+        <input type="date" placeholder={t('table.date_end')} value={dateEnd} onChange={e => setDateEnd(e.target.value)} className="p-2 border border-gray-300 rounded bg-white" />
+        <button onClick={() => { setSearch(''); setMinAmount(''); setMaxAmount(''); setDateStart(''); setDateEnd(''); }} className="p-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700 cursor-pointer">{t('table.reset')}</button>
       </div>
       {months.map((month, idx) => {
         const monthlyPayments = paymentsByMonth[month];
@@ -146,13 +148,13 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
             <table className="w-full text-base text-left text-gray-700 mb-0 shadow-md rounded-lg">
               <thead className="text-sm text-white uppercase" style={{background: 'oklch(37.9% .146 265.522)'}}>
                 <tr>
-                  <th scope="col" className="px-6 py-4">Actions</th>
-                  <th scope="col" className="px-6 py-4">Source</th>
-                  <th scope="col" className="px-6 py-4">Montant</th>
-                  <th scope="col" className="px-6 py-4">Date</th>
-                  <th scope="col" className="px-6 py-4">Mois</th>
-                  <th scope="col" className="px-6 py-4">Catégorie</th>
-                  <th scope="col" className="px-6 py-4">Reçu</th>
+                  <th scope="col" className="px-6 py-4">{t('table.actions')}</th>
+                  <th scope="col" className="px-6 py-4">{t('table.source')}</th>
+                  <th scope="col" className="px-6 py-4">{t('table.amount')}</th>
+                  <th scope="col" className="px-6 py-4">{t('table.date')}</th>
+                  <th scope="col" className="px-6 py-4">{t('table.months')}</th>
+                  <th scope="col" className="px-6 py-4">{t('table.category')}</th>
+                  <th scope="col" className="px-6 py-4">{t('table.receipt')}</th>
                 </tr>
               </thead>
               <tbody className="bg-gray-50 divide-y divide-gray-300">
@@ -191,7 +193,7 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
                           <span className="inline-flex items-center justify-center rounded-full bg-white" style={{ width: 28, height: 28 }}>
                             <span className="text-lg" style={{ color: 'black' }}>{categoryIcons[payment.category] || ''}</span>
                           </span>
-                          <span>{payment.category}</span>
+                          <span>{t(`categories.${payment.category}`)}</span>
                         </span>
                       ) : ''}
                     </td>
@@ -264,11 +266,10 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-2xl shadow-2xl w-[420px] max-w-full relative animate-fade-in">
             <h2 className="text-2xl font-extrabold mb-6 text-indigo-700 flex items-center gap-2">
-              <span>{massActionModal.action === 'edit' ? '📝' : '🗑️'}</span> {massActionModal.action === 'edit' ? 'Modification d’un paiement récurrent' : 'Suppression d’un paiement récurrent'}
+              <span>{massActionModal.action === 'edit' ? '📝' : '🗑️'}</span> {massActionModal.action === 'edit' ? t('modal.mass_edit_title') : t('modal.mass_delete_title')}
             </h2>
             <p className="mb-8 text-gray-700 text-lg text-center">
-              Ce paiement fait partie d’une série <span className="font-bold text-indigo-600">({massActionModal.payment.nbr_month} mois)</span>.<br />
-              Voulez-vous {massActionModal.action === 'edit' ? 'modifier' : 'supprimer'}&nbsp;:
+              {t('modal.mass_action_text', { months: massActionModal.payment.nbr_month, action: t('modal.' + (massActionModal.action === 'edit' ? 'edit' : 'delete')) })}
             </p>
             <div className="flex flex-col gap-3">
               {massActionModal.action === 'edit' ? (
@@ -277,13 +278,19 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
                     onClick={handleEditSingle}
                     className="flex items-center gap-2 px-5 py-3 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-base font-semibold shadow"
                   >
-                    <span className="text-xl">✏️</span> Modifier <span className="font-bold ml-1">seulement ce paiement</span>
+                    <span className="text-xl">✏️</span> {t('modal.edit_single')}
                   </button>
                   <button
                     onClick={handleEditMass}
                     className="flex items-center gap-2 px-5 py-3 w-full bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-base font-semibold shadow"
                   >
-                    <span className="text-xl">🔄</span> Modifier <span className="font-bold ml-1">tous les paiements liés</span>
+                    <span className="text-xl">🔄</span> {t('modal.edit_all')}
+                  </button>
+                  <button
+                    onClick={() => setMassActionModal({ show: false, payment: null, action: null })}
+                    className="flex items-center gap-2 px-5 py-3 w-full bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition text-base font-semibold shadow mt-2"
+                  >
+                    <span className="text-xl">❌</span> {t('modal.cancel')}
                   </button>
                 </>
               ) : (
@@ -292,22 +299,22 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
                     onClick={handleDeleteSingle}
                     className="flex items-center gap-2 px-5 py-3 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-base font-semibold shadow"
                   >
-                    <span className="text-xl">🗑️</span> Supprimer <span className="font-bold ml-1">seulement ce paiement</span>
+                    <span className="text-xl">🗑️</span> {t('modal.delete_single')}
                   </button>
                   <button
                     onClick={handleDeleteMass}
                     className="flex items-center gap-2 px-5 py-3 w-full bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-base font-semibold shadow"
                   >
-                    <span className="text-xl">🗑️</span> Supprimer <span className="font-bold ml-1">tous les paiements liés</span>
+                    <span className="text-xl">🗑️</span> {t('modal.delete_all')}
+                  </button>
+                  <button
+                    onClick={() => setMassActionModal({ show: false, payment: null, action: null })}
+                    className="flex items-center gap-2 px-5 py-3 w-full bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition text-base font-semibold shadow mt-2"
+                  >
+                    <span className="text-xl">❌</span> {t('modal.cancel')}
                   </button>
                 </>
               )}
-              <button
-                onClick={() => setMassActionModal({ show: false, payment: null, action: null })}
-                className="flex items-center gap-2 px-5 py-3 w-full bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition text-base font-semibold shadow mt-2"
-              >
-                <span className="text-xl">❌</span> Annuler
-              </button>
             </div>
           </div>
         </div>
@@ -315,20 +322,20 @@ const PaymentsTable = ({ payments, onEdit, onDelete }) => {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 className="text-lg font-bold mb-4 text-gray-800">Confirmer la suppression</h2>
-            <p className="mb-6 text-gray-700">Voulez-vous vraiment supprimer ce paiement ? Cette action est irréversible.</p>
+            <h2 className="text-lg font-bold mb-4 text-gray-800">{t('table.confirm_delete_title')}</h2>
+            <p className="mb-6 text-gray-700">{t('table.confirm_delete_text')}</p>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={cancelDelete}
                 className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
               >
-                Annuler
+                {t('table.cancel')}
               </button>
               <button
                 onClick={confirmDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
-                Supprimer
+                {t('table.delete')}
               </button>
             </div>
           </div>
